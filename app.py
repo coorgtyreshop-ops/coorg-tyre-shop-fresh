@@ -153,3 +153,181 @@ st.set_page_config(page_title="Coorg Tyre Shop", page_icon="🛞", layout="wide"
 
 st.title("🛞 Coorg Tyre Shop - Management System")
 st.set_page_config(page_title="നിങ്ങളുടെ പുതിയ പേര്", page_icon="https://example.com/your-logo.png", layout="wide")
+import streamlit as st
+import pandas as pd
+from datetime import date
+
+# Page Configuration
+st.set_page_config(page_title="COORG TYRE SHOP", page_icon="🛞", layout="wide")
+
+# Session State for Live Data Tracking (Stock & Sales)
+if "stock_data" not in st.session_state:
+    st.session_state.stock_data = []
+
+if "sales_data" not in st.session_state:
+    st.session_state.sales_data = []
+
+st.title("🛞 COORG TYRE SHOP - Management System")
+
+# Clean Single Sidebar Menu
+menu = st.sidebar.selectbox(
+    "📌 Select Menu",
+    [
+        "📊 Overview & Dashboard",
+        "🛞 Stock & Sales Management",
+        "🧾 Customer Bill & Print",
+        "♻️ Re-sole (Retread) Tyres",
+        "💰 Pigmi Accounts (4 ACs)",
+        "💸 Daily Expenses / Chelavukal",
+        "💸 Check Kadam (Credit/Udhar)",
+        "🔧 Tube, Lock & Puncture Service",
+        "📓 Quick Notepad & Calculator",
+        "📱 Installing App Guide"
+    ]
+)
+
+# 1. Overview & Dashboard
+if menu == "📊 Overview & Dashboard":
+    st.header("📊 Live Dashboard & Summary")
+    
+    # Calculate Live Metrics
+    total_stock_qty = sum(item["Quantity"] for item in st.session_state.stock_data)
+    total_sold_qty = sum(item["Quantity Sold"] for item in st.session_state.sales_data)
+    total_sales_amount = sum(item["Total Price"] for item in st.session_state.sales_data)
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Sales Amount", f"₹ {total_sales_amount:,.2f}")
+    col2.metric("Total Tyres Sold", f"{total_sold_qty} nos")
+    col3.metric("Current Available Stock", f"{total_stock_qty} nos")
+    col4.metric("Pending Kadam", "₹ 0")
+
+    st.write("---")
+    st.subheader("📦 Current Available Stock List")
+    if st.session_state.stock_data:
+        df_stock = pd.DataFrame(st.session_state.stock_data)
+        st.dataframe(df_stock, use_container_width=True)
+    else:
+        st.info("No stock items added yet.")
+
+    st.subheader("🛍️ Recent Sales History")
+    if st.session_state.sales_data:
+        df_sales = pd.DataFrame(st.session_state.sales_data)
+        st.dataframe(df_sales, use_container_width=True)
+    else:
+        st.info("No sales recorded yet.")
+
+# 2. Stock & Sales Management
+elif menu == "🛞 Stock & Sales Management":
+    st.header("🛞 Stock & Sales Entry")
+    
+    tab1, tab2 = st.tabs(["➕ Add Stock (ചേർക്കുക)", "🛒 Record Sale (വിൽപന)"])
+    
+    with tab1:
+        with st.form("stock_form"):
+            st.subheader("Add New Tyre / Item")
+            col_a, col_b = st.columns(2)
+            with col_a:
+                s_category = st.selectbox("Category", ["Tyre", "Tube", "Flap", "Neck"])
+                s_company = st.text_input("Brand / Company Name (e.g. JK Tyre)")
+                s_size = st.text_input("Size / Model Details (e.g. 145/80 R12)")
+            with col_b:
+                purchase_price = st.number_input("Purchase Price (₹)", min_value=0.0, step=10.0)
+                profit_pct = st.slider("Desired Profit Percentage (%)", min_value=0, max_value=50, value=15)
+                qty = st.number_input("Quantity Received", min_value=1, value=1)
+            
+            auto_selling_price = purchase_price + (purchase_price * profit_pct / 100)
+            st.markdown(f"### 💡 Selling Price per piece: **₹ {auto_selling_price:.2f}**")
+            
+            submitted_stock = st.form_submit_button("Save to Stock 📦")
+            if submitted_stock:
+                new_item = {
+                    "Category": s_category,
+                    "Company": s_company,
+                    "Size": s_size,
+                    "Purchase Price": purchase_price,
+                    "Selling Price": auto_selling_price,
+                    "Quantity": qty
+                }
+                st.session_state.stock_data.append(new_item)
+                st.success(f"✅ Added {qty} nos of {s_company} {s_size} to Stock!")
+
+    with tab2:
+        st.subheader("Sell Item from Stock")
+        if st.session_state.stock_data:
+            stock_options = [f"{item['Company']} {item['Size']} (Available: {item['Quantity']})" for item in st.session_state.stock_data if item['Quantity'] > 0]
+            
+            if stock_options:
+                selected_stock = st.selectbox("Select Tyre / Item to Sell", stock_options)
+                sell_qty = st.number_input("Selling Quantity", min_value=1, value=1)
+                
+                # Extract Index
+                selected_index = stock_options.index(selected_stock)
+                item_to_sell = st.session_state.stock_data[selected_index]
+                
+                if sell_qty > item_to_sell["Quantity"]:
+                    st.error("❌ Not enough stock available!")
+                else:
+                    total_sell_price = item_to_sell["Selling Price"] * sell_qty
+                    st.write(f"**Total Selling Amount:** ₹ {total_sell_price:.2f}")
+                    
+                    if st.button("Complete Sale 🛒"):
+                        # Reduce Stock
+                        item_to_sell["Quantity"] -= sell_qty
+                        
+                        # Add to Sales
+                        sale_record = {
+                            "Date": str(date.today()),
+                            "Item": f"{item_to_sell['Company']} {item_to_sell['Size']}",
+                            "Quantity Sold": sell_qty,
+                            "Total Price": total_sell_price
+                        }
+                        st.session_state.sales_data.append(sale_record)
+                        st.success("✅ Sale Recorded Successfully! Dashboard updated.")
+            else:
+                st.warning("No available items in stock to sell.")
+        else:
+            st.warning("Please add stock items first.")
+
+# 3. Customer Bill & Print
+elif menu == "🧾 Customer Bill & Print":
+    st.header("🧾 Customer Bill Generator")
+    col1, col2 = st.columns(2)
+    with col1:
+        cust_name = st.text_input("Customer Name")
+        cust_phone = st.text_input("Phone Number")
+    with col2:
+        v_no = st.text_input("Vehicle Number")
+        b_date = st.date_input("Bill Date", date.today())
+        
+    bill_items = st.text_area("Item Description (e.g. 2x JK Tyre 145/80 R12)")
+    total_bill = st.number_input("Total Amount (₹)", min_value=0, step=50)
+    
+    st.markdown("### 🖨️ Bill Preview")
+    bill_box = f"""
+    <div style="border: 2px solid #333; padding: 20px; border-radius: 10px; background-color: #ffffff; color: #000000; font-family: Arial, sans-serif;">
+        <h2 style="text-align: center; color: #d32f2f;">🛞 COORG TYRE SHOP</h2>
+        <p style="text-align: center; font-size: 13px;">ONTIYANGADI, ABYATH MANGALA, SIDDAPUR | 📱 9900316275</p>
+        <hr>
+        <p><strong>Date:</strong> {b_date} | <strong>Customer:</strong> {cust_name} ({cust_phone})</p>
+        <p><strong>Vehicle No:</strong> {v_no}</p>
+        <p><strong>Particulars:</strong> {bill_items}</p>
+        <h3 style="text-align: right; color: #1b5e20;">Total: ₹ {total_bill}</h3>
+    </div>
+    """
+    st.markdown(bill_box, unsafe_allow_html=True)
+
+# Other Menus Placeholder
+elif menu == "♻️ Re-sole (Retread) Tyres":
+    st.header("♻️ Re-sole (Retread) Tyre Tracking")
+elif menu == "💰 Pigmi Accounts (4 ACs)":
+    st.header("💰 Pigmi Monitoring")
+elif menu == "💸 Daily Expenses / Chelavukal":
+    st.header("💸 Daily Shop Expenses")
+elif menu == "💸 Check Kadam (Credit/Udhar)":
+    st.header("💸 Customer Credit / Udhar Tracking")
+elif menu == "🔧 Tube, Lock & Puncture Service":
+    st.header("🔧 Service Logging")
+elif menu == "📓 Quick Notepad & Calculator":
+    st.header("📓 Quick Notes")
+elif menu == "📱 Installing App Guide":
+    st.header("📱 App Installation Guide")

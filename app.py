@@ -148,3 +148,7 @@ elif menu == "📱 Installing App Guide":
     * **Android:** Open Chrome -> Click 3 dots -> **Add to Home screen**.
     * **Chromebook / PC:** Click menu -> **Cast, save and share** -> **Create shortcut**.
     """)
+# Page Configuration
+st.set_page_config(page_title="Coorg Tyre Shop", page_icon="🛞", layout="wide")
+
+st.title("🛞 Coorg Tyre Shop - Management System")

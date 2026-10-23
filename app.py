@@ -16,12 +16,13 @@ st.set_page_config(
 if "tyre_stock" not in st.session_state:
     st.session_state.tyre_stock = [
         {"BRAND": "APOLLO", "SIZE": "90/100/10", "CONDITION": "New", "PATTERN": "53J GRIP", "STOCK": 1, "PURCHASE RATE": 1020, "SELLING RATE": 1450},
-        {"BRAND": "APOLLO", "SIZE": "90/90/12", "CONDITION": "New", "PATTERN": "GRIP", "STOCK": 0, "PURCHASE RATE": 950, "SELLING RATE": 1350}
+        {"BRAND": "APOLLO", "SIZE": "90/90/12", "CONDITION": "New", "PATTERN": "ZIP54 J", "STOCK": 0, "PURCHASE RATE": 950, "SELLING RATE": 1350}
     ]
 
 if "tube_stock" not in st.session_state:
     st.session_state.tube_stock = [
-        {"BRAND": "MRF", "SIZE": "3.00-10", "STOCK": 5, "PURCHASE RATE": 180, "SELLING RATE": 250}
+        {"BRAND": "MRF", "SIZE": "3.00-10", "STOCK": 5, "PURCHASE RATE": 180, "SELLING RATE": 250},
+        {"BRAND": "BRAZA", "SIZE": "3.00/18", "STOCK": 4, "PURCHASE RATE": 200, "SELLING RATE": 245}
     ]
 
 if "pigmi_data" not in st.session_state:
@@ -50,23 +51,38 @@ if "pigmi_data" not in st.session_state:
         }
     ]
 
+if "retread_data" not in st.session_state:
+    st.session_state.retread_data = [
+        {
+            "CUSTOMER": "PRAVEEN", "MOBILE": "", "VEHICLE": "LORY", "VEH_NO": "JK - 10.20", 
+            "PROCESS": "Cold", "BRAND": "JK", "SIZE": "10.20", "TYRE_NO": "#V003519", 
+            "MFG": "0325", "QTY": 1, "DATE": "2026-10-05", "TOTAL": 6880, "PAID": 6880, "STATUS": "Delivered"
+        }
+    ]
+
 if "billing_data" not in st.session_state:
     st.session_state.billing_data = [
-        {"BILL_NO": "CTS-1176", "TYPE": "Counter Sale", "SERVICE": "Puncture-Service", "AMOUNT": 2350},
-        {"BILL_NO": "CTS-1175", "TYPE": "Counter Sale", "SERVICE": "Puncture-Service", "AMOUNT": 350},
-        {"BILL_NO": "CTS-1174", "TYPE": "Counter Sale", "SERVICE": "Puncture-Service", "AMOUNT": 100},
-        {"BILL_NO": "CTS-1173", "TYPE": "Counter Sale", "SERVICE": "Puncture-Service", "AMOUNT": 500}
+        {"BILL_NO": "CTS-1176", "TYPE": "Counter Sale", "SERVICE": "Tubeless Puncture", "AMOUNT": 100, "MODE": "Cash"}
     ]
 
 if "expenses_data" not in st.session_state:
     st.session_state.expenses_data = [
         {"CATEGORY": "Room Rent", "AMOUNT": 15000},
-        {"CATEGORY": "Electricity", "AMOUNT": 2500},
-        {"CATEGORY": "Shop Setup", "AMOUNT": 75620}
+        {"CATEGORY": "Electricity", "AMOUNT": 2500}
     ]
 
+if "shop_settings" not in st.session_state:
+    st.session_state.shop_settings = {
+        "name_en": "COORG TYRE SHOP",
+        "name_ml": "കൂർഗ് ടയർ ഷോപ്പ്",
+        "address": "Abyayath Mangala, Ontiyangadi, Main Road, Siddapura - 571253",
+        "phone": "9900316275",
+        "upi": "coorgtyreshop-1@okhdfcbank",
+        "account_holder": "SHAHAJAHAN IBRAHIM"
+    }
+
 # ---------------------------------------------------------
-# CUSTOM CSS STYLING (DARK THEME)
+# CUSTOM CSS STYLING
 # ---------------------------------------------------------
 st.markdown("""
 <style>
@@ -87,15 +103,6 @@ st.markdown("""
         font-size: 12px;
         color: #888;
     }
-    .warning-box {
-        background-color: #2b2308;
-        border: 1px solid #f39c12;
-        color: #f1c40f;
-        padding: 10px;
-        border-radius: 5px;
-        font-size: 13px;
-        margin-bottom: 15px;
-    }
     .card-box {
         background-color: #161920;
         padding: 15px;
@@ -107,137 +114,222 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Top Banner
-st.markdown("""
-<div class="main-header">
-    <div class="shop-title">🛞 COORG TYRE SHOP</div>
-    <div class="shop-sub">Abyayath Mangala, Ontiyangadi, Main Road, Siddapura - 571253</div>
+st.markdown(f"""
+<div class="main-header" style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+        <div class="shop-title">🛞 {st.session_state.shop_settings['name_en']}</div>
+        <div class="shop-sub">{st.session_state.shop_settings['address']}</div>
+    </div>
+    <div>
+        <span style="background-color: #d9534f; color: white; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 12px;">🔴 CCTV Live</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# NAVIGATION TABS (ALL MODULES)
+# ALL NAVIGATION TABS
 # ---------------------------------------------------------
 tabs = st.tabs([
     "📈 Overview", 
     "🛞 Tyre Stock", 
     "🔘 Tube Stock",
     "📋 Reorder / Low Stock",
+    "📊 Market Rates",
+    "🔧 Puncture Items",
     "🎬 Status Studio", 
+    "🚚 Suppliers / Inward", 
+    "🔄 Retreading / Rebelting",
+    "📖 Dealers Directory",
+    "💳 Credit (Kadam)",
     "🐷 Pigmi Collection", 
     "🧾 Billing", 
+    "🛡️ Guarantee / Claims",
     "💳 Payments", 
     "💸 Expenses",
-    "🚚 Suppliers / Inward", 
-    "🛡️ Guarantee / Claims",
-    "📖 Dealers Directory"
+    "⚙️ Shop Settings"
 ])
 
 # 1. OVERVIEW
 with tabs[0]:
-    st.subheader("OVERVIEW • TODAY's SUMMARY")
+    st.subheader("OVERVIEW • DASHBOARD")
+    
+    # Report Filter Header
+    col_r1, col_r2, col_r3, col_r4 = st.columns([1, 1, 1, 1])
+    report_type = col_r1.radio("Report Filter", ["Daily", "Monthly", "Annual"], horizontal=True, label_visibility="collapsed")
+    selected_date = col_r3.date_input("Date", date.today(), label_visibility="collapsed")
+    if col_r4.button("Generate 🚀"):
+        st.success("Report generated!")
+
+    st.markdown("---")
+    
+    # Metrics Grid (As shown in video)
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Today's Sales", "₹ 2,350")
-    c2.metric("Total Tyres Sold", "1 nos")
-    c3.metric("Available Stock", f"{sum(item['STOCK'] for item in st.session_state.tyre_stock)} nos")
-    c4.metric("Pigmi Total Balance", f"₹ {sum(item['BALANCE'] for item in st.session_state.pigmi_data):,.2f}")
+    c1.metric("TODAY'S SALES", "₹ 100")
+    c2.metric("CASH", "₹ 0")
+    c3.metric("PAYTM / UPI", "₹ 0")
+    c4.metric("CREDIT GIVEN TODAY", "₹ 0")
+
+    c5, c6, c7, c8 = st.columns(4)
+    c5.metric("PIGMI COLLECTED TODAY", "₹ 22,500")
+    c6.metric("PIGMI WITHDRAWN", "₹ 0")
+    c7.metric("PAID TO AGENTS", "₹ 0")
+    c8.metric("EXPENSES TODAY", "₹ 0")
+
+    c9, c10 = st.columns(2)
+    c9.metric("NET CASH IN HAND", "₹ 0")
+    c10.metric("TOTAL OUTSTANDING", "₹ 4,000")
+
+    st.markdown("---")
+    st.subheader("🛒 TODAY'S WORK BREAKDOWN")
+    
+    with st.form("work_breakdown_form"):
+        col_w1, col_w2, col_w3, col_w4 = st.columns([2, 1, 1, 1])
+        item_type = col_w1.selectbox("ITEM", [
+            "Tubeless Puncture", "Tube Puncture", "Inside Puncture", 
+            "Neck / Valve Change", "Tyre Setting", "Tyre Sale", 
+            "Tube Sale", "Fitting Charge", "Wheel Balancing", "Flap Change"
+        ])
+        qty = col_w2.number_input("QTY", min_value=1, value=1)
+        amount = col_w3.number_input("AMOUNT (₹)", min_value=0, value=100)
+        pay_mode = col_w4.selectbox("PAYMENT MODE", ["Cash", "UPI", "Credit"])
+        
+        if st.form_submit_button("💾 Save Work"):
+            st.success("Work entry saved successfully!")
+
+    st.markdown("---")
+    st.subheader("📅 THIS MONTH")
+    m1, m2 = st.columns(2)
+    m1.metric("TODAY'S SALES", "₹ 1,18,888")
+    m2.metric("CASH", "₹ 51,449")
+    
+    m3, m4 = st.columns(2)
+    m3.metric("PAYTM / UPI", "₹ 66,139")
+    m4.metric("EXPENSES", "₹ 93,120")
 
 # 2. TYRE STOCK
 with tabs[1]:
     st.subheader(f"TYRE STOCK ({len(st.session_state.tyre_stock)})")
-    
-    st.markdown("""
-    <div class="warning-box">
-        ⚠️ ഇന്നത്തെ വില ഇതുവരെ വന്നിട്ടില്ല — അവസാനം Online വില എടുത്തത്: 22/10, 10:35 am - എല്ലാ ദിവസവും രാവിലെ തനിയെ പുതുക്കും.
-    </div>
-    """, unsafe_allow_html=True)
-
-    with st.expander("➕ Add New Tyre Stock"):
-        with st.form("add_tyre_form"):
-            col1, col2, col3, col4 = st.columns(4)
-            brand = col1.text_input("Brand (e.g. APOLLO)")
-            size = col2.text_input("Size (e.g. 90/100/10)")
-            condition = col3.selectbox("Condition", ["New", "Used", "Retread"])
-            pattern = col4.text_input("Pattern (e.g. 53J GRIP)")
-            
-            col5, col6, col7 = st.columns(3)
-            p_rate = col5.number_input("Purchase Rate (₹)", min_value=0)
-            s_rate = col6.number_input("Selling Rate (₹)", min_value=0)
-            qty = col7.number_input("Stock Qty", min_value=0, value=1)
-            
-            if st.form_submit_button("Save Tyre 📦"):
-                st.session_state.tyre_stock.append({
-                    "BRAND": brand.upper(), "SIZE": size, "CONDITION": condition,
-                    "PATTERN": pattern, "STOCK": qty, "PURCHASE RATE": p_rate, "SELLING RATE": s_rate
-                })
-                st.success("✅ Tyre stock added!")
-                st.rerun()
-
-    search_tyre = st.text_input("🔍 Search size / brand (e.g. 165/80 or MRF)...", key="search_t")
+    search_t = st.text_input("🔍 Search size / brand (e.g. 165/80 or MRF)...")
     df_t = pd.DataFrame(st.session_state.tyre_stock)
-    if not df_t.empty and search_tyre:
-        df_t = df_t[df_t['BRAND'].str.contains(search_tyre, case=False, na=False) | df_t['SIZE'].str.contains(search_tyre, case=False, na=False)]
+    if not df_t.empty and search_t:
+        df_t = df_t[df_t['BRAND'].str.contains(search_t, case=False, na=False) | df_t['SIZE'].str.contains(search_t, case=False, na=False)]
     st.dataframe(df_t, use_container_width=True)
 
 # 3. TUBE STOCK
 with tabs[2]:
     st.subheader(f"TUBE STOCK ({len(st.session_state.tube_stock)})")
-    with st.expander("➕ Add New Tube Stock"):
-        with st.form("add_tube_form"):
-            c1, c2, c3 = st.columns(3)
-            t_brand = c1.text_input("Brand")
-            t_size = c2.text_input("Size")
-            t_qty = c3.number_input("Quantity", min_value=1, value=1)
-            if st.form_submit_button("Save Tube"):
-                st.session_state.tube_stock.append({"BRAND": t_brand.upper(), "SIZE": t_size, "STOCK": t_qty, "PURCHASE RATE": 150, "SELLING RATE": 220})
-                st.success("Tube added!")
-                st.rerun()
     df_tu = pd.DataFrame(st.session_state.tube_stock)
-    if not df_tu.empty:
-        st.dataframe(df_tu, use_container_width=True)
+    st.dataframe(df_tu, use_container_width=True)
 
 # 4. REORDER / LOW STOCK
 with tabs[3]:
     st.subheader("REORDER / LOW STOCK")
     low_limit = st.slider("Low if <=", 1, 5, 3)
-    st.write(f"Items that are out of stock or running low (<= {low_limit}) — give this list to your agent to order.")
-    
     out_of_stock = [item for item in st.session_state.tyre_stock if item['STOCK'] <= low_limit]
-    if out_of_stock:
-        st.markdown("### ❌ OUT OF STOCK / LOW STOCK")
-        for item in out_of_stock:
-            st.markdown(f"""
-            <div class="card-box" style="border-left: 4px solid #f44336;">
-                <b style="font-size:16px;">{item['BRAND']} {item['SIZE']}</b> — Stock Qty: <span style="color:#f44336; font-weight:bold;">{item['STOCK']}</span>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.success("All items have sufficient stock!")
+    for item in out_of_stock:
+        st.markdown(f"""
+        <div class="card-box" style="border-left: 4px solid #f44336;">
+            <b>{item['BRAND']} {item['SIZE']}</b> — Stock Qty: <span style="color:#f44336;">{item['STOCK']}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
-# 5. STATUS STUDIO
+# 5. MARKET RATES
 with tabs[4]:
+    st.subheader("LIVE MARKET RATE LOOKUP")
+    st.write("Enter vehicle type, brand & tyre size — get today's online market prices.")
+    col_m1, col_m2, col_m3 = st.columns(3)
+    col_m1.selectbox("VEHICLE", ["Car", "Bike", "Scooter", "Auto", "Truck"])
+    col_m2.selectbox("BRAND", ["Apollo", "MRF", "CEAT", "JK Tyre"])
+    col_m3.text_input("SIZE", placeholder="e.g. 165/80 R14")
+
+# 6. PUNCTURE ITEMS
+with tabs[5]:
+    st.subheader("PUNCTURE ITEMS (5)")
+    st.markdown("""
+    <div class="card-box">
+        <b>Flap</b><br>Stock: 3 pcs<br><span style="color:#f44336;">LOW STOCK</span>
+        <h3 style="color:#4CAF50;">₹320</h3>
+    </div>
+    """, unsafe_allow_html=True)
+
+# 7. STATUS STUDIO
+with tabs[6]:
     st.subheader("STATUS STUDIO")
-    st.write("Create branded WhatsApp-status posters & videos from your shop photos/clips.")
-    
+    st.write("Create branded WhatsApp-status posters & videos.")
     st.radio("Format", ["Poster", "Status Video"], horizontal=True)
     st.radio("Source", ["AI-made", "My photo"], horizontal=True)
-    
     st.file_uploader("Choose File", type=["jpg", "png", "mp4"])
-    st.button("Take photo with camera 📷")
-    
-    st.markdown("---")
-    st.write("### Design Customizations")
-    st.selectbox("Text Position", ["Top", "Center", "Bottom"])
-    st.text_input("Tyre Size (Optional)", placeholder="e.g. 165/80 R14")
-    st.selectbox("New / Second-hand", ["New", "Second-Hand"])
-    
-    if st.button("✨ AI Auto-Design (from photo)"):
-        st.success("Status poster generated successfully!")
 
-# 6. PIGMI COLLECTION
-with tabs[5]:
+# 8. SUPPLIERS / INWARD
+with tabs[7]:
+    st.subheader("SUPPLIERS / INWARD")
+    st.info("Manage suppliers and incoming stock invoices.")
+
+# 9. RETREADING / REBELTING
+with tabs[8]:
+    st.subheader("RETREADING / REBELTING (2)")
+    with st.expander("➕ Add Retread Job"):
+        with st.form("retread_form"):
+            c1, c2 = st.columns(2)
+            cust = c1.text_input("Customer Name")
+            mob = c2.text_input("Mobile")
+            c3, c4 = st.columns(2)
+            veh = c3.text_input("Vehicle")
+            veh_no = c4.text_input("Vehicle Number")
+            proc = st.selectbox("Process", ["Cold", "Hot / Normal"])
+            brand = st.text_input("Brand")
+            size = st.text_input("Size")
+            tyre_no = st.text_input("Tyre Number")
+            qty = st.number_input("Qty", min_value=1, value=1)
+            if st.form_submit_button("Save Job"):
+                st.success("Retread job added!")
+
+    for r in st.session_state.retread_data:
+        st.markdown(f"""
+        <div class="card-box">
+            <h3 style="color:#ff9800; margin:0;">{r['CUSTOMER']}</h3>
+            <p style="color:#aaa; font-size:13px;">{r['VEHICLE']} • {r['VEH_NO']} | {r['PROCESS']}</p>
+            <p><b>{r['TYRE_NO']}</b> | Qty: {r['QTY']} | Total: ₹{r['TOTAL']} | Paid: ₹{r['PAID']}</p>
+            <span style="background-color:#4CAF50; color:white; padding:2px 8px; border-radius:4px; font-size:12px;">{r['STATUS']}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+# 10. DEALERS DIRECTORY
+with tabs[9]:
+    st.subheader("DEALERS DIRECTORY")
+    st.info("Direct supplier contact details.")
+
+# 11. CREDIT (KADAM)
+with tabs[10]:
+    st.subheader("CREDIT (KADAM) MANAGEMENT")
+    st.info("Track customer credit and dues.")
+
+# 12. PIGMI COLLECTION
+with tabs[11]:
     tot_pigmi = sum(p['BALANCE'] for p in st.session_state.pigmi_data)
     st.subheader(f"🐷 PIGMI COLLECTION • Total balance: ₹{tot_pigmi:,.2f}")
     
+    with st.expander("➕ Add Pigmi Account"):
+        with st.form("add_pigmi_form"):
+            c1, c2, c3 = st.columns(3)
+            p_name = c1.text_input("Customer Name")
+            p_place = c2.text_input("Place")
+            p_mob = c3.text_input("Mobile")
+            c4, c5 = st.columns(2)
+            p_bank = c4.text_input("Bank name")
+            p_ac = c5.text_input("Pigmy Account No / A/C")
+            p_old = st.number_input("Old Balance (₹)", min_value=0.0)
+            
+            if st.form_submit_button("Save Account 💾"):
+                if p_name and p_ac:
+                    st.session_state.pigmi_data.append({
+                        "NAME": p_name.upper(), "LOCATION": p_place.upper(), "PHONE": p_mob,
+                        "BANK": p_bank, "AC_NO": p_ac, "OLD_BAL": p_old, 
+                        "COLLECTED": 0.0, "WITHDRAWN": 0.0, "BALANCE": p_old
+                    })
+                    st.success("Pigmi account added!")
+                    st.rerun()
+
     for idx, p in enumerate(st.session_state.pigmi_data):
         st.markdown(f"""
         <div class="card-box">
@@ -245,108 +337,69 @@ with tabs[5]:
             <p style="color:#aaa; font-size:13px; margin:2px 0;">{p['LOCATION']} • {p['PHONE']}</p>
             <p style="color:#ff9800; font-size:13px; margin-bottom:10px;">🏛️ <b>{p['BANK']}</b> | A/C: {p['AC_NO']}</p>
             <p style="font-size:14px;">
-                Old Balance: <b>₹{p['OLD_BAL']}</b> | Collected: <b style="color:#4CAF50;">₹{p['COLLECTED']}</b> | Withdrawn: <b style="color:#f44336;">₹{p['WITHDRAWN']}</b> | <b>Balance: ₹{p['BALANCE']}</b>
+                Old Balance: <b>₹{p['OLD_BAL']:,.2f}</b> | Collected: <b style="color:#4CAF50;">₹{p['COLLECTED']:,.2f}</b> | Withdrawn: <b style="color:#f44336;">₹{p['WITHDRAWN']:,.2f}</b> | <b style="color:#4CAF50;">Balance: ₹{p['BALANCE']:,.2f}</b>
             </p>
         </div>
         """, unsafe_allow_html=True)
         
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button(f"📥 Collect (A/C: {p['AC_NO']})", key=f"col_{idx}"):
-                st.session_state.pigmi_data[idx]['COLLECTED'] += 500
-                st.session_state.pigmi_data[idx]['BALANCE'] += 500
-                st.rerun()
-        with c2:
-            if st.button(f"📤 Withdraw (A/C: {p['AC_NO']})", key=f"wit_{idx}"):
-                st.session_state.pigmi_data[idx]['WITHDRAWN'] += 500
-                st.session_state.pigmi_data[idx]['BALANCE'] -= 500
-                st.rerun()
+        c_btn1, c_btn2 = st.columns(2)
+        if c_btn1.button(f"📥 Collect ({p['AC_NO']})", key=f"col_{idx}"):
+            st.session_state.pigmi_data[idx]['COLLECTED'] += 500
+            st.session_state.pigmi_data[idx]['BALANCE'] += 500
+            st.rerun()
+        if c_btn2.button(f"📤 Withdraw ({p['AC_NO']})", key=f"wit_{idx}"):
+            st.session_state.pigmi_data[idx]['WITHDRAWN'] += 500
+            st.session_state.pigmi_data[idx]['BALANCE'] -= 500
+            st.rerun()
 
-# 7. BILLING
-with tabs[6]:
-    st.subheader(f"BILLING ({len(st.session_state.billing_data)})")
-    
-    if st.button("➕ Create Bill"):
-        new_no = f"CTS-{1177 + len(st.session_state.billing_data)}"
-        st.session_state.billing_data.insert(0, {"BILL_NO": new_no, "TYPE": "Counter Sale", "SERVICE": "Puncture-Service", "AMOUNT": 250})
-        st.rerun()
-
+# 13. BILLING
+with tabs[12]:
+    st.subheader("BILLING")
     for b in st.session_state.billing_data:
         st.markdown(f"""
-        <div class="card-box" style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-                <b style="color:#ff9800; font-size:16px;">{b['BILL_NO']}</b><br>
-                <b style="font-size:18px;">{b['TYPE']}</b><br>
-                <span style="color:#aaa; font-size:13px;">{b['SERVICE']}</span>
-                <h2 style="color:#4CAF50; margin:5px 0 0 0;">₹{b['AMOUNT']}</h2>
-            </div>
+        <div class="card-box">
+            <b style="color:#ff9800; font-size:16px;">{b['BILL_NO']}</b> - {b['TYPE']} ({b['SERVICE']})
+            <h3 style="color:#4CAF50; margin:5px 0 0 0;">₹ {b['AMOUNT']}</h3>
         </div>
         """, unsafe_allow_html=True)
 
-# 8. PAYMENTS
-with tabs[7]:
+# 14. GUARANTEE / CLAIMS
+with tabs[13]:
+    st.subheader("GUARANTEE / CLAIMS")
+    st.info("Warranty claims management.")
+
+# 15. PAYMENTS
+with tabs[14]:
     st.subheader("PAYMENTS")
-    st.caption("Cash and digital (UPI/GPay/PhonePe) collections, separated. Mark each digital bill paid once the money reaches your bank.")
-    
     c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("""
-        <div class="card-box">
-            <span style="color:#aaa;">💵 CASH TODAY</span>
-            <h2 style="color:#4CAF50; margin:5px 0;">₹ 0</h2>
-            <span style="color:#888; font-size:12px;">in hand</span>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown("""
-        <div class="card-box">
-            <span style="color:#aaa;">💵 CASH THIS MONTH</span>
-            <h2 style="color:#fff; margin:5px 0;">₹ 51,449</h2>
-        </div>
-        """, unsafe_allow_html=True)
+    c1.metric("CASH TODAY", "₹ 0")
+    c2.metric("DIGITAL TODAY", "₹ 0")
 
-    with c2:
-        st.markdown("""
-        <div class="card-box">
-            <span style="color:#aaa;">📱 DIGITAL TODAY</span>
-            <h2 style="color:#4CAF50; margin:5px 0;">₹ 0</h2>
-            <span style="color:#888; font-size:12px;">to bank account</span>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown("""
-        <div class="card-box">
-            <span style="color:#aaa;">📱 DIGITAL THIS MONTH</span>
-            <h2 style="color:#fff; margin:5px 0;">₹ 66,139</h2>
-        </div>
-        """, unsafe_allow_html=True)
-
-# 9. EXPENSES
-with tabs[8]:
+# 16. EXPENSES
+with tabs[15]:
     tot_exp = sum(e['AMOUNT'] for e in st.session_state.expenses_data)
     st.subheader(f"EXPENSES • Total: ₹{tot_exp:,.2f}")
-    
-    with st.expander("➕ ADD EXPENSE"):
-        with st.form("add_exp_form"):
-            cat = st.selectbox("CATEGORY", ["Room Rent", "Electricity", "Salary", "Goods Purchase", "Welding", "Machine Repair", "Shop Setup", "Tea/Food", "Transport", "Other"])
-            amt = st.number_input("AMOUNT (₹)", min_value=0, step=100)
-            if st.form_submit_button("Save Expense 💾"):
-                st.session_state.expenses_data.append({"CATEGORY": cat, "AMOUNT": amt})
-                st.success("✅ Expense saved!")
-                st.rerun()
-
     df_exp = pd.DataFrame(st.session_state.expenses_data)
     st.dataframe(df_exp, use_container_width=True)
 
-# 10. SUPPLIERS
-with tabs[9]:
-    st.subheader("🚚 SUPPLIERS / INWARD")
-    st.info("Manage suppliers and inward stock entries here.")
-
-# 11. GUARANTEE / CLAIMS
-with tabs[10]:
-    st.subheader("🛡️ GUARANTEE / CLAIMS")
-    st.info("Track warranty and replacement claims here.")
-
-# 12. DEALERS DIRECTORY
-with tabs[11]:
-    st.subheader("📖 DEALERS DIRECTORY")
-    st.info("Contact info for tyre suppliers and dealers.")
+# 17. SHOP SETTINGS
+with tabs[16]:
+    st.subheader("SHOP SETTINGS")
+    st.write("Add your bank & UPI details — these power the Scan & Pay QR and bill header.")
+    with st.form("settings_form"):
+        s_name_en = st.text_input("SHOP NAME (ENGLISH)", value=st.session_state.shop_settings['name_en'])
+        s_name_ml = st.text_input("SHOP NAME (MALAYALAM)", value=st.session_state.shop_settings['name_ml'])
+        s_addr = st.text_input("ADDRESS", value=st.session_state.shop_settings['address'])
+        s_ph = st.text_input("PHONE", value=st.session_state.shop_settings['phone'])
+        s_upi = st.text_input("UPI ID (FOR QR)", value=st.session_state.shop_settings['upi'])
+        s_acc = st.text_input("ACCOUNT HOLDER", value=st.session_state.shop_settings['account_holder'])
+        
+        if st.form_submit_button("Save Settings 💾"):
+            st.session_state.shop_settings['name_en'] = s_name_en
+            st.session_state.shop_settings['name_ml'] = s_name_ml
+            st.session_state.shop_settings['address'] = s_addr
+            st.session_state.shop_settings['phone'] = s_ph
+            st.session_state.shop_settings['upi'] = s_upi
+            st.session_state.shop_settings['account_holder'] = s_acc
+            st.success("Settings updated successfully!")
+            st.rerun()

@@ -152,3 +152,4 @@ elif menu == "📱 Installing App Guide":
 st.set_page_config(page_title="Coorg Tyre Shop", page_icon="🛞", layout="wide")
 
 st.title("🛞 Coorg Tyre Shop - Management System")
+st.set_page_config(page_title="നിങ്ങളുടെ പുതിയ പേര്", page_icon="https://example.com/your-logo.png", layout="wide")

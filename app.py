@@ -486,7 +486,7 @@ with tabs[11]:
             st.success("✅ Expense Saved!")
             st.rerun()
 
-# 13. RETREADING (UPDATED FOR MULTIPLE TYRES & INDIVIDUAL SL NOs)
+# 13. RETREADING (FIXED DUPLICATION & CLEAN SINGLE ENTRY)
 with tabs[12]:
     st.subheader("🔄 RETREADING / REBELTING MANAGEMENT")
     
@@ -501,12 +501,7 @@ with tabs[12]:
         r_qty = col_r4.number_input("Quantity / Total Tyres (ടയറുകളുടെ എണ്ണം)", min_value=1, value=1)
         r_status = col_r5.selectbox("Status (നിലവിലെ അവസ്ഥ)", ["Pending", "Sent to Factory", "Ready", "Delivered"])
         
-        st.markdown("#### 🔢 Enter Tyre Serial Numbers (ഓരോ ടയറിന്റെയും SL No):")
-        tyre_serials = []
-        # Create dynamic input fields based on quantity
-        for i in range(int(r_qty)):
-            s_no = st.text_input(f"Tyre #{i+1} Serial Number / Sl No", key=f"tyre_sn_{i}")
-            tyre_serials.append(s_no)
+        r_serials_input = st.text_input("Tyre Serial Numbers / SL Nos (ഒന്നിലധികം ഉണ്ടെങ്കിൽ കോമ ഇട്ട് എഴുതുക e.g. 46034733422, 46082853322)")
         
         col_r6, col_r7 = st.columns(2)
         r_tot_amt = col_r6.number_input("Total Amount (ആകെ തുക ₹)", min_value=0, value=2000)
@@ -518,7 +513,7 @@ with tabs[12]:
                 "CUSTOMER": r_cust,
                 "PHONE": r_phone,
                 "TYRE_SIZE": r_size,
-                "TYRE_SERIALS": tyre_serials,
+                "TYRE_SERIALS": r_serials_input,
                 "QTY": r_qty,
                 "TOTAL": r_tot_amt,
                 "ADVANCE": r_adv_amt,
@@ -546,18 +541,13 @@ with tabs[12]:
             elif stat == "Sent to Factory":
                 status_color = "#9c27b0"
 
-            # Format tyre serial numbers nicely
-            serials_str = ", ".join([sn for sn in r.get('TYRE_SERIALS', []) if sn])
-            if not serials_str:
-                serials_str = r.get('TYRE_NO', 'N/A')
-
             col_rc1, col_rc2 = st.columns([5, 1])
             with col_rc1:
                 st.markdown(f"""
                 <div class="card-box">
                     <h3 style="margin:0; color:#4CAF50;">{r['CUSTOMER']} ({r.get('PHONE', 'N/A')})</h3>
                     <p style="color:#ccc; font-size:13px; margin:2px 0;">Tyre Size: <b>{r['TYRE_SIZE']}</b> | Qty: <b>{r['QTY']}</b></p>
-                    <p style="color:#00bcd4; font-size:13px; margin:2px 0;">SL Nos: <b>{serials_str}</b></p>
+                    <p style="color:#00bcd4; font-size:13px; margin:2px 0;">SL Nos: <b>{r.get('TYRE_SERIALS', 'N/A')}</b></p>
                     <p style="color:#ff9800; font-size:13px; margin:2px 0;">Total: ₹<b>{r.get('TOTAL', 0):,.2f}</b> | Advance: ₹<b>{r.get('ADVANCE', 0):,.2f}</b> | Balance Due: <b style="color:#f44336;">₹{bal:,.2f}</b></p>
                     <p style="font-size:13px; margin-top:5px;">Status: <span style="background-color:{status_color}; color:#fff; padding:2px 8px; border-radius:4px; font-weight:bold;">{stat}</span> | Date: {r.get('DATE', 'N/A')}</p>
                 </div>
@@ -580,7 +570,7 @@ with tabs[13]:
         g_issue = st.text_input("Issue / Defect Description")
         if st.form_submit_button("Save Claim Record 💾"):
             st.session_state.guarantee_claims.append({
-                "CUSTOMER": g_cust, "ITEM": g_item, "ISSUE": g_issue, "STATUS": "Pending"
+                "CUSTOMER": g_cust, "ITEM": g_issue, "ISSUE": g_issue, "STATUS": "Pending"
             })
             st.success("Claim added!")
             st.rerun()

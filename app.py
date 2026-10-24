@@ -486,21 +486,76 @@ with tabs[11]:
             st.success("✅ Expense Saved!")
             st.rerun()
 
-# 13. RETREADING
+# 13. RETREADING (UPDATED WITH ADVANCE, BALANCE, TYRE NO, & STATUS)
 with tabs[12]:
-    st.subheader("🔄 RETREADING / REBELTING")
+    st.subheader("🔄 RETREADING / REBELTING MANAGEMENT")
+    
     st.markdown("### ➕ Add Retreading Record")
     with st.form("add_retread_form"):
         col_r1, col_r2, col_r3 = st.columns(3)
-        r_cust = col_r1.text_input("Customer Name")
-        r_size = col_r2.text_input("Tyre Size")
-        r_qty = col_r3.number_input("Quantity", min_value=1, value=1)
+        r_cust = col_r1.text_input("Customer Name (പേര്)")
+        r_phone = col_r2.text_input("Phone Number (ഫോൺ നമ്പർ)")
+        r_size = col_r3.text_input("Tyre Size (ടയർ സൈസ്)")
+        
+        col_r4, col_r5, col_r6 = st.columns(3)
+        r_tyreno = col_r4.text_input("Tyre Number / Sl No (ടയർ നമ്പർ)")
+        r_tot_amt = col_r5.number_input("Total Amount (ആകെ തുക ₹)", min_value=0, value=2000)
+        r_adv_amt = col_r6.number_input("Advance Paid (അഡ്വാൻസ് ₹)", min_value=0, value=500)
+        
+        col_r7, col_r8 = st.columns(2)
+        r_qty = col_r7.number_input("Quantity (എണ്ണം)", min_value=1, value=1)
+        r_status = col_r8.selectbox("Status (നിലവിലെ അവസ്ഥ)", ["Pending", "Sent to Factory", "Ready", "Delivered"])
+        
         if st.form_submit_button("Save Retreading Record 💾"):
+            balance_amt = max(0, r_tot_amt - r_adv_amt)
             st.session_state.retreading_data.append({
-                "CUSTOMER": r_cust, "TYRE_SIZE": r_size, "QTY": r_qty, "STATUS": "Sent to factory"
+                "CUSTOMER": r_cust,
+                "PHONE": r_phone,
+                "TYRE_SIZE": r_size,
+                "TYRE_NO": r_tyreno,
+                "QTY": r_qty,
+                "TOTAL": r_tot_amt,
+                "ADVANCE": r_adv_amt,
+                "BALANCE": balance_amt,
+                "STATUS": r_status,
+                "DATE": str(date.today())
             })
-            st.success("Retreading record added!")
+            st.success("✅ Retreading record saved successfully!")
             st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 📋 Retreading Records List")
+    if not st.session_state.retreading_data:
+        st.info("No retreading records added yet.")
+    else:
+        for idx, r in enumerate(st.session_state.retreading_data):
+            bal = r.get('BALANCE', max(0, r.get('TOTAL', 0) - r.get('ADVANCE', 0)))
+            stat = r.get('STATUS', 'Pending')
+            
+            status_color = "#ff9800"
+            if stat == "Ready":
+                status_color = "#2196F3"
+            elif stat == "Delivered":
+                status_color = "#4CAF50"
+            elif stat == "Sent to Factory":
+                status_color = "#9c27b0"
+
+            col_rc1, col_rc2 = st.columns([5, 1])
+            with col_rc1:
+                st.markdown(f"""
+                <div class="card-box">
+                    <h3 style="margin:0; color:#4CAF50;">{r['CUSTOMER']} ({r.get('PHONE', 'N/A')})</h3>
+                    <p style="color:#ccc; font-size:13px; margin:2px 0;">Tyre Size: <b>{r['TYRE_SIZE']}</b> | Tyre No: <b>{r.get('TYRE_NO', 'N/A')}</b> | Qty: {r['QTY']}</p>
+                    <p style="color:#ff9800; font-size:13px; margin:2px 0;">Total: ₹<b>{r.get('TOTAL', 0):,.2f}</b> | Advance: ₹<b>{r.get('ADVANCE', 0):,.2f}</b> | Balance Due: <b style="color:#f44336;">₹{bal:,.2f}</b></p>
+                    <p style="font-size:13px; margin-top:5px;">Status: <span style="background-color:{status_color}; color:#fff; padding:2px 8px; border-radius:4px; font-weight:bold;">{stat}</span> | Date: {r.get('DATE', 'N/A')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_rc2:
+                st.write("")
+                if st.button("🗑️ Delete", key=f"del_ret_{idx}"):
+                    st.session_state.retreading_data.pop(idx)
+                    st.success("Record deleted!")
+                    st.rerun()
 
 # 14. GUARANTEE / CLAIMS
 with tabs[13]:

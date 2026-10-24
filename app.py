@@ -158,7 +158,7 @@ with tabs[0]:
     c7.metric("PAID TO AGENTS", "₹ 0.00")
     c8.metric("TOTAL EXPENSES", f"₹ {tot_expenses:,.2f}")
 
-# 8. PIGMI COLLECTION (WITH DETAILED HISTORY LOG)
+# 8. PIGMI COLLECTION (WITH DELETE OPTIONS FOR ENTRIES & ACCOUNTS)
 with tabs[7]:
     tot_pigmi = sum(p['BALANCE'] for p in st.session_state.pigmi_data)
     st.subheader(f"🐷 PIGMI COLLECTION • Total Balance: ₹{tot_pigmi:,.2f}")
@@ -188,23 +188,41 @@ with tabs[7]:
 
     st.markdown("### 📋 ACTIVE PIGMI ACCOUNTS")
     for idx, p in enumerate(st.session_state.pigmi_data):
-        st.markdown(f"""
-        <div class="card-box">
-            <h3 style="margin:0; color:#4CAF50;">{p['NAME']}</h3>
-            <p style="color:#ccc; font-size:13px; margin:2px 0;">{p['LOCATION']} • {p['PHONE']}</p>
-            <p style="color:#ff9800; font-size:13px; margin-bottom:5px;">🏛️ <b>{p['BANK']}</b> | A/C No: <b>{p['AC_NO']}</b></p>
-            <p style="font-size:13px; color:#aaa; margin-bottom:10px;">📅 Last Collection Date: <b>{p.get('LAST_DATE', 'N/A')}</b></p>
-            <p style="font-size:14px; color:#fff;">
-                Total Collected: <b style="color:#4CAF50;">₹{p['COLLECTED']:,.2f}</b> | Balance: <b style="color:#4CAF50;">₹{p['BALANCE']:,.2f}</b>
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        col_main, col_del = st.columns([5, 1])
+        with col_main:
+            st.markdown(f"""
+            <div class="card-box">
+                <h3 style="margin:0; color:#4CAF50;">{p['NAME']}</h3>
+                <p style="color:#ccc; font-size:13px; margin:2px 0;">{p['LOCATION']} • {p['PHONE']}</p>
+                <p style="color:#ff9800; font-size:13px; margin-bottom:5px;">🏛️ <b>{p['BANK']}</b> | A/C No: <b>{p['AC_NO']}</b></p>
+                <p style="font-size:13px; color:#aaa; margin-bottom:10px;">📅 Last Collection Date: <b>{p.get('LAST_DATE', 'N/A')}</b></p>
+                <p style="font-size:14px; color:#fff;">
+                    Total Collected: <b style="color:#4CAF50;">₹{p['COLLECTED']:,.2f}</b> | Balance: <b style="color:#4CAF50;">₹{p['BALANCE']:,.2f}</b>
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        with col_del:
+            if st.button("🗑️ Delete Account", key=f"del_ac_{idx}"):
+                st.session_state.pigmi_data.pop(idx)
+                st.success("Account Deleted!")
+                st.rerun()
         
-        # Display History of Collections
+        # Display & Delete History of Collections
         if p.get("HISTORY"):
-            with st.expander(f"📜 View Collection History for {p['NAME']}"):
-                for h in p["HISTORY"]:
-                    st.markdown(f"- 📅 Date: **{h['DATE']}** | Collected Amount: <b style='color:#4CAF50;'>₹{h['AMOUNT']:,.2f}</b>", unsafe_allow_html=True)
+            with st.expander(f"📜 View/Edit Collection History for {p['NAME']}"):
+                for h_idx, h in enumerate(p["HISTORY"]):
+                    h_col1, h_col2 = st.columns([4, 1])
+                    with h_col1:
+                        st.markdown(f"- 📅 Date: **{h['DATE']}** | Collected Amount: <b style='color:#4CAF50;'>₹{h['AMOUNT']:,.2f}</b>", unsafe_allow_html=True)
+                    with h_col2:
+                        if st.button("🗑️ Clear Entry", key=f"del_h_{idx}_{h_idx}"):
+                            # Subtract amount from total and balance
+                            st.session_state.pigmi_data[idx]['COLLECTED'] -= h['AMOUNT']
+                            st.session_state.pigmi_data[idx]['BALANCE'] -= h['AMOUNT']
+                            # Remove from history
+                            st.session_state.pigmi_data[idx]['HISTORY'].pop(h_idx)
+                            st.success("Entry removed!")
+                            st.rerun()
         
         col_b1, col_b2, col_b3 = st.columns([2, 2, 1])
         with col_b1:
@@ -224,7 +242,6 @@ with tabs[7]:
                 st.session_state.pigmi_data[idx]['BALANCE'] += daily_amt
                 st.session_state.pigmi_data[idx]['LAST_DATE'] = str(collect_date)
                 
-                # Append to history
                 if "HISTORY" not in st.session_state.pigmi_data[idx]:
                     st.session_state.pigmi_data[idx]["HISTORY"] = []
                 st.session_state.pigmi_data[idx]["HISTORY"].insert(0, {"DATE": str(collect_date), "AMOUNT": daily_amt})

@@ -486,7 +486,7 @@ with tabs[11]:
             st.success("✅ Expense Saved!")
             st.rerun()
 
-# 13. RETREADING (UPDATED WITH ADVANCE, BALANCE, TYRE NO, & STATUS)
+# 13. RETREADING (UPDATED FOR MULTIPLE TYRES & INDIVIDUAL SL NOs)
 with tabs[12]:
     st.subheader("🔄 RETREADING / REBELTING MANAGEMENT")
     
@@ -497,14 +497,20 @@ with tabs[12]:
         r_phone = col_r2.text_input("Phone Number (ഫോൺ നമ്പർ)")
         r_size = col_r3.text_input("Tyre Size (ടയർ സൈസ്)")
         
-        col_r4, col_r5, col_r6 = st.columns(3)
-        r_tyreno = col_r4.text_input("Tyre Number / Sl No (ടയർ നമ്പർ)")
-        r_tot_amt = col_r5.number_input("Total Amount (ആകെ തുക ₹)", min_value=0, value=2000)
-        r_adv_amt = col_r6.number_input("Advance Paid (അഡ്വാൻസ് ₹)", min_value=0, value=500)
+        col_r4, col_r5 = st.columns(2)
+        r_qty = col_r4.number_input("Quantity / Total Tyres (ടയറുകളുടെ എണ്ണം)", min_value=1, value=1)
+        r_status = col_r5.selectbox("Status (നിലവിലെ അവസ്ഥ)", ["Pending", "Sent to Factory", "Ready", "Delivered"])
         
-        col_r7, col_r8 = st.columns(2)
-        r_qty = col_r7.number_input("Quantity (എണ്ണം)", min_value=1, value=1)
-        r_status = col_r8.selectbox("Status (നിലവിലെ അവസ്ഥ)", ["Pending", "Sent to Factory", "Ready", "Delivered"])
+        st.markdown("#### 🔢 Enter Tyre Serial Numbers (ഓരോ ടയറിന്റെയും SL No):")
+        tyre_serials = []
+        # Create dynamic input fields based on quantity
+        for i in range(int(r_qty)):
+            s_no = st.text_input(f"Tyre #{i+1} Serial Number / Sl No", key=f"tyre_sn_{i}")
+            tyre_serials.append(s_no)
+        
+        col_r6, col_r7 = st.columns(2)
+        r_tot_amt = col_r6.number_input("Total Amount (ആകെ തുക ₹)", min_value=0, value=2000)
+        r_adv_amt = col_r7.number_input("Advance Paid (അഡ്വാൻസ് ₹)", min_value=0, value=500)
         
         if st.form_submit_button("Save Retreading Record 💾"):
             balance_amt = max(0, r_tot_amt - r_adv_amt)
@@ -512,7 +518,7 @@ with tabs[12]:
                 "CUSTOMER": r_cust,
                 "PHONE": r_phone,
                 "TYRE_SIZE": r_size,
-                "TYRE_NO": r_tyreno,
+                "TYRE_SERIALS": tyre_serials,
                 "QTY": r_qty,
                 "TOTAL": r_tot_amt,
                 "ADVANCE": r_adv_amt,
@@ -540,12 +546,18 @@ with tabs[12]:
             elif stat == "Sent to Factory":
                 status_color = "#9c27b0"
 
+            # Format tyre serial numbers nicely
+            serials_str = ", ".join([sn for sn in r.get('TYRE_SERIALS', []) if sn])
+            if not serials_str:
+                serials_str = r.get('TYRE_NO', 'N/A')
+
             col_rc1, col_rc2 = st.columns([5, 1])
             with col_rc1:
                 st.markdown(f"""
                 <div class="card-box">
                     <h3 style="margin:0; color:#4CAF50;">{r['CUSTOMER']} ({r.get('PHONE', 'N/A')})</h3>
-                    <p style="color:#ccc; font-size:13px; margin:2px 0;">Tyre Size: <b>{r['TYRE_SIZE']}</b> | Tyre No: <b>{r.get('TYRE_NO', 'N/A')}</b> | Qty: {r['QTY']}</p>
+                    <p style="color:#ccc; font-size:13px; margin:2px 0;">Tyre Size: <b>{r['TYRE_SIZE']}</b> | Qty: <b>{r['QTY']}</b></p>
+                    <p style="color:#00bcd4; font-size:13px; margin:2px 0;">SL Nos: <b>{serials_str}</b></p>
                     <p style="color:#ff9800; font-size:13px; margin:2px 0;">Total: ₹<b>{r.get('TOTAL', 0):,.2f}</b> | Advance: ₹<b>{r.get('ADVANCE', 0):,.2f}</b> | Balance Due: <b style="color:#f44336;">₹{bal:,.2f}</b></p>
                     <p style="font-size:13px; margin-top:5px;">Status: <span style="background-color:{status_color}; color:#fff; padding:2px 8px; border-radius:4px; font-weight:bold;">{stat}</span> | Date: {r.get('DATE', 'N/A')}</p>
                 </div>

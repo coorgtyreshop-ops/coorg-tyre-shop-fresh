@@ -11,7 +11,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# SESSION STATE DATA INITIALIZATION
+# SESSION STATE DATA INITIALIZATION (FIXED KEYS)
 # ---------------------------------------------------------
 if "tyre_stock" not in st.session_state:
     st.session_state.tyre_stock = [
@@ -31,8 +31,7 @@ if "puncture_items" not in st.session_state:
 
 if "pigmi_data" not in st.session_state:
     st.session_state.pigmi_data = [
-        {"NAME": "SHAHAJAHAN E", "LOCATION": "ONTIYANGADI", "PHONE": "9900316275", "BANK": "Janaasha South Nidhi Ltd", "AC_NO": "035601167", "DAILY_TARGET": 500, "OLD_BAL": 1000, "COLLECTED": 6000, "WITHDRAWN": 0, "BALANCE": 7000, "LAST_DATE": str(date.today())},
-        {"NAME": "SHAHAJAHAN", "LOCATION": "ONTIYANGADI", "PHONE": "9900316275", "BANK": "Nelliyanipuri Society Bank", "AC_NO": "11298", "DAILY_TARGET": 100, "OLD_BAL": 0, "COLLECTED": 5500, "WITHDRAWN": 0, "BALANCE": 5500, "LAST_DATE": str(date.today())}
+        {"NAME": "SHAHAJAHAN E", "LOCATION": "ONTIYANGADI", "PHONE": "9900316275", "BANK": "Janaasha South Nidhi Ltd", "AC_NO": "035601167", "DAILY_TARGET": 500, "OLD_BAL": 1000, "COLLECTED": 6000, "WITHDRAWN": 0, "BALANCE": 7000, "LAST_DATE": str(date.today())}
     ]
 
 if "billing_data" not in st.session_state:
@@ -146,7 +145,7 @@ with tabs[0]:
     c7.metric("PAID TO AGENTS", "₹ 0")
     c8.metric("TOTAL EXPENSES", f"₹ {sum(e['AMOUNT'] for e in st.session_state.expenses_data):,.2f}")
 
-# 2. TYRE STOCK
+# 2. TYRE STOCK (WITH SAFE KEY GETTER)
 with tabs[1]:
     st.subheader(f"TYRE STOCK ({len(st.session_state.tyre_stock)})")
     with st.expander("➕ Add New Tyre Stock"):
@@ -173,11 +172,12 @@ with tabs[1]:
                 st.rerun()
 
     for idx, t in enumerate(st.session_state.tyre_stock):
+        v_type = t.get('VEHICLE', 'General')
         col1, col2 = st.columns([5, 1])
         with col1:
             st.markdown(f"""
             <div class="card-box" style="padding:10px; margin-bottom:5px;">
-                <b>{t['BRAND']}</b> ({t['VEHICLE']}) - {t['SIZE']} | Cond: {t['CONDITION']} | Stock: <b style="color:#4CAF50;">{t['STOCK']}</b> | Sell: ₹{t['SELLING RATE']}
+                <b>{t['BRAND']}</b> ({v_type}) - {t['SIZE']} | Cond: {t.get('CONDITION', 'New')} | Stock: <b style="color:#4CAF50;">{t['STOCK']}</b> | Sell: ₹{t['SELLING RATE']}
             </div>
             """, unsafe_allow_html=True)
         with col2:
@@ -210,11 +210,12 @@ with tabs[2]:
                 st.rerun()
 
     for idx, tu in enumerate(st.session_state.tube_stock):
+        tu_veh = tu.get('VEHICLE', 'General')
         col1, col2 = st.columns([5, 1])
         with col1:
             st.markdown(f"""
             <div class="card-box" style="padding:10px; margin-bottom:5px;">
-                <b>{tu['BRAND']}</b> ({tu['VEHICLE']}) - {tu['SIZE']} | Stock: <b style="color:#4CAF50;">{tu['STOCK']}</b> | Sell: ₹{tu['SELLING RATE']}
+                <b>{tu['BRAND']}</b> ({tu_veh}) - {tu['SIZE']} | Stock: <b style="color:#4CAF50;">{tu['STOCK']}</b> | Sell: ₹{tu['SELLING RATE']}
             </div>
             """, unsafe_allow_html=True)
         with col2:
@@ -250,7 +251,8 @@ with tabs[4]:
     out_of_stock = [item for item in st.session_state.tyre_stock if item['STOCK'] <= low_limit]
     if out_of_stock:
         for item in out_of_stock:
-            st.markdown(f"""<div class="card-box" style="border-left: 4px solid #f44336;"><b>{item['BRAND']} ({item['VEHICLE']}) {item['SIZE']}</b> — Stock Qty: <span style="color:#f44336;">{item['STOCK']}</span></div>""", unsafe_allow_html=True)
+            v_t = item.get('VEHICLE', '')
+            st.markdown(f"""<div class="card-box" style="border-left: 4px solid #f44336;"><b>{item['BRAND']} ({v_t}) {item['SIZE']}</b> — Stock Qty: <span style="color:#f44336;">{item['STOCK']}</span></div>""", unsafe_allow_html=True)
     else:
         st.success("All items have sufficient stock!")
 
@@ -268,7 +270,7 @@ with tabs[6]:
     st.subheader("🎬 STATUS STUDIO")
     st.write("Create branded WhatsApp-status posters & videos.")
 
-# 8. PIGMI COLLECTION (WITH DATE CALENDAR)
+# 8. PIGMI COLLECTION
 with tabs[7]:
     tot_pigmi = sum(p['BALANCE'] for p in st.session_state.pigmi_data)
     st.subheader(f"🐷 PIGMI COLLECTION • Total Balance: ₹{tot_pigmi:,.2f}")
@@ -309,7 +311,6 @@ with tabs[7]:
         </div>
         """, unsafe_allow_html=True)
         
-        # Date Picker & Amount Input & Collect Button
         col_b1, col_b2, col_b3 = st.columns([2, 2, 1])
         with col_b1:
             collect_date = st.date_input("Collection Date 📅", value=date.today(), key=f"date_{idx}")
@@ -321,7 +322,7 @@ with tabs[7]:
                 key=f"daily_amt_{idx}"
             )
         with col_b3:
-            st.write("") # spacing
+            st.write("") 
             st.write("")
             if st.button(f"📥 Collect ₹{daily_amt}", key=f"col_btn_{idx}"):
                 st.session_state.pigmi_data[idx]['COLLECTED'] += daily_amt

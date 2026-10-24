@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import date
+import os
 
 # Page Configuration with Dark Theme
 st.set_page_config(
@@ -10,46 +11,57 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+DATA_FILE = "coorg_tyre_data.csv"
+
 # ---------------------------------------------------------
-# SESSION STATE DATA INITIALIZATION
+# PERSISTENT LOCAL CSV STORAGE LOGIC
 # ---------------------------------------------------------
-if "tyre_stock" not in st.session_state:
-    st.session_state.tyre_stock = []
+def load_data():
+    if os.path.exists(DATA_FILE):
+        try:
+            return pd.read_pickle("coorg_tyre_data.pkl")
+        except:
+            pass
+    return {
+        "tyre_stock": [],
+        "tube_stock": [],
+        "puncture_items": [
+            {"SERVICE": "Tubeless Puncture", "RATE": 100},
+            {"SERVICE": "Tube Puncture", "RATE": 80}
+        ],
+        "pigmi_data": [],
+        "sales_data": [],
+        "expenses_data": [],
+        "credit_data": [],
+        "market_rates": [
+            {"BRAND": "APOLLO", "SIZE": "90/100/10", "ONLINE_PRICE": 1450, "LAST_UPDATED": "24/10/2026"}
+        ],
+        "guarantee_claims": [],
+        "dealers_directory": [],
+        "retreading_data": []
+    }
 
-if "tube_stock" not in st.session_state:
-    st.session_state.tube_stock = []
+def save_data():
+    store = {
+        "tyre_stock": st.session_state.tyre_stock,
+        "tube_stock": st.session_state.tube_stock,
+        "puncture_items": st.session_state.puncture_items,
+        "pigmi_data": st.session_state.pigmi_data,
+        "sales_data": st.session_state.sales_data,
+        "expenses_data": st.session_state.expenses_data,
+        "credit_data": st.session_state.credit_data,
+        "market_rates": st.session_state.market_rates,
+        "guarantee_claims": st.session_state.guarantee_claims,
+        "dealers_directory": st.session_state.dealers_directory,
+        "retreading_data": st.session_state.retreading_data
+    }
+    pd.to_pickle(store, "coorg_tyre_data.pkl")
 
-if "puncture_items" not in st.session_state:
-    st.session_state.puncture_items = [
-        {"SERVICE": "Tubeless Puncture", "RATE": 100},
-        {"SERVICE": "Tube Puncture", "RATE": 80}
-    ]
-
-if "pigmi_data" not in st.session_state:
-    st.session_state.pigmi_data = []
-
-if "sales_data" not in st.session_state:
-    st.session_state.sales_data = []
-
-if "expenses_data" not in st.session_state:
-    st.session_state.expenses_data = []
-
-if "credit_data" not in st.session_state:
-    st.session_state.credit_data = []
-
-if "market_rates" not in st.session_state:
-    st.session_state.market_rates = [
-        {"BRAND": "APOLLO", "SIZE": "90/100/10", "ONLINE_PRICE": 1450, "LAST_UPDATED": "24/10/2026"}
-    ]
-
-if "guarantee_claims" not in st.session_state:
-    st.session_state.guarantee_claims = []
-
-if "dealers_directory" not in st.session_state:
-    st.session_state.dealers_directory = []
-
-if "retreading_data" not in st.session_state:
-    st.session_state.retreading_data = []
+# Initialize session state from file
+saved_store = load_data()
+for key, val in saved_store.items():
+    if key not in st.session_state:
+        st.session_state[key] = val
 
 # ---------------------------------------------------------
 # CUSTOM CSS STYLING
@@ -188,7 +200,8 @@ with tabs[0]:
                 st.session_state.credit_data.append({
                     "CUSTOMER": "Counter Customer", "PHONE": "N/A", "DETAILS": f"{item_type} ({selected_size})", "AMOUNT": amount, "STATUS": "Pending"
                 })
-            st.success("✅ Sale recorded successfully!")
+            save_data()
+            st.success("✅ Sale recorded and saved permanently!")
             st.rerun()
 
 # 2. TYRE STOCK
@@ -215,7 +228,8 @@ with tabs[1]:
                 "CONDITION": condition, "PATTERN": pattern, "STOCK": qty, 
                 "PURCHASE RATE": p_rate, "SELLING RATE": s_rate
             })
-            st.success("✅ Tyre added successfully!")
+            save_data()
+            st.success("✅ Tyre added & saved permanently!")
             st.rerun()
 
     st.markdown("---")
@@ -235,6 +249,7 @@ with tabs[1]:
             with col_t2:
                 if st.button("🗑️ Delete", key=f"del_t_{idx}"):
                     st.session_state.tyre_stock.pop(idx)
+                    save_data()
                     st.rerun()
 
 # 3. TUBE STOCK
@@ -259,7 +274,8 @@ with tabs[2]:
                 "BRAND": brand, "VEHICLE": vehicle, "SIZE": size, 
                 "CONDITION": cond, "STOCK": qty, "PURCHASE RATE": p_rate, "SELLING RATE": s_rate
             })
-            st.success("✅ Tube added successfully!")
+            save_data()
+            st.success("✅ Tube added and saved permanently!")
             st.rerun()
 
     st.markdown("---")
@@ -279,6 +295,7 @@ with tabs[2]:
             with col_tu2:
                 if st.button("🗑️ Delete", key=f"del_tu_{idx}"):
                     st.session_state.tube_stock.pop(idx)
+                    save_data()
                     st.rerun()
 
 # 4. PUNCTURE ITEMS
@@ -290,6 +307,7 @@ with tabs[3]:
         service_rate = st.number_input("Standard Rate (₹)", min_value=0, value=100)
         if st.form_submit_button("Save Service Item"):
             st.session_state.puncture_items.append({"SERVICE": service_name, "RATE": service_rate})
+            save_data()
             st.success("Service item added!")
             st.rerun()
 
@@ -301,6 +319,7 @@ with tabs[3]:
         with col_pi2:
             if st.button("🗑️ Delete", key=f"del_pi_{idx}"):
                 st.session_state.puncture_items.pop(idx)
+                save_data()
                 st.rerun()
 
 # 5. REORDER / LOW STOCK
@@ -354,6 +373,7 @@ with tabs[7]:
                 "LAST_DATE": str(date.today()),
                 "HISTORY": []
             })
+            save_data()
             st.success("✅ Pigmi Account Added Successfully!")
             st.rerun()
 
@@ -379,6 +399,7 @@ with tabs[7]:
             with col_del:
                 if st.button("🗑️ Delete Account", key=f"del_ac_{idx}"):
                     st.session_state.pigmi_data.pop(idx)
+                    save_data()
                     st.success("Account Deleted!")
                     st.rerun()
             
@@ -393,6 +414,7 @@ with tabs[7]:
                                 st.session_state.pigmi_data[idx]['COLLECTED'] -= h['AMOUNT']
                                 st.session_state.pigmi_data[idx]['BALANCE'] -= h['AMOUNT']
                                 st.session_state.pigmi_data[idx]['HISTORY'].pop(h_idx)
+                                save_data()
                                 st.success("Entry removed!")
                                 st.rerun()
             
@@ -421,6 +443,7 @@ with tabs[7]:
                         st.session_state.pigmi_data[idx]["HISTORY"] = []
                     st.session_state.pigmi_data[idx]["HISTORY"].insert(0, {"DATE": str(collect_date), "AMOUNT": daily_amt})
                     
+                    save_data()
                     st.success(f"✅ Added ₹{daily_amt} on {collect_date}!")
                     st.rerun()
 
@@ -448,7 +471,8 @@ with tabs[10]:
             st.session_state.credit_data.append({
                 "CUSTOMER": cust_name, "PHONE": cust_phone, "DETAILS": credit_details, "AMOUNT": credit_amt, "STATUS": "Pending"
             })
-            st.success("Credit added!")
+            save_data()
+            st.success("Credit added and saved!")
             st.rerun()
 
 # 12. EXPENSES
@@ -483,10 +507,11 @@ with tabs[11]:
                 "URGENCY": urgency,
                 "DATE": str(exp_date)
             })
+            save_data()
             st.success("✅ Expense Saved!")
             st.rerun()
 
-# 13. RETREADING (FIXED DUPLICATION & CLEAN SINGLE ENTRY)
+# 13. RETREADING
 with tabs[12]:
     st.subheader("🔄 RETREADING / REBELTING MANAGEMENT")
     
@@ -521,6 +546,7 @@ with tabs[12]:
                 "STATUS": r_status,
                 "DATE": str(date.today())
             })
+            save_data()
             st.success("✅ Retreading record saved successfully!")
             st.rerun()
 
@@ -554,39 +580,4 @@ with tabs[12]:
                 """, unsafe_allow_html=True)
             with col_rc2:
                 st.write("")
-                if st.button("🗑️ Delete", key=f"del_ret_{idx}"):
-                    st.session_state.retreading_data.pop(idx)
-                    st.success("Record deleted!")
-                    st.rerun()
-
-# 14. GUARANTEE / CLAIMS
-with tabs[13]:
-    st.subheader("🛡️ GUARANTEE & WARRANTY CLAIMS")
-    st.markdown("### ➕ Add Claim Record")
-    with st.form("add_claim_form"):
-        col_g1, col_g2 = st.columns(2)
-        g_cust = col_g1.text_input("Customer Name")
-        g_item = col_g2.text_input("Item Name / Size")
-        g_issue = st.text_input("Issue / Defect Description")
-        if st.form_submit_button("Save Claim Record 💾"):
-            st.session_state.guarantee_claims.append({
-                "CUSTOMER": g_cust, "ITEM": g_issue, "ISSUE": g_issue, "STATUS": "Pending"
-            })
-            st.success("Claim added!")
-            st.rerun()
-
-# 15. DEALERS DIRECTORY
-with tabs[14]:
-    st.subheader("📖 DEALERS DIRECTORY")
-    st.markdown("### ➕ Add Dealer Info")
-    with st.form("add_dealer_form"):
-        col_d1, col_d2, col_d3 = st.columns(3)
-        d_name = col_d1.text_input("Dealer Name")
-        d_loc = col_d2.text_input("Location")
-        d_phone = col_d3.text_input("Phone Number")
-        if st.form_submit_button("Save Dealer 💾"):
-            st.session_state.dealers_directory.append({
-                "DEALER": d_name, "LOCATION": d_loc, "PHONE": d_phone
-            })
-            st.success("Dealer added!")
-            st.rerun()
+                if st.button("🗑️ Delete", key=

@@ -141,7 +141,57 @@ with tabs[0]:
     c7.metric("PAID TO AGENTS", "₹ 0.00")
     c8.metric("TOTAL EXPENSES", f"₹ {tot_expenses:,.2f}")
 
-# 2. TYRE STOCK (FIXED ADD & VIEW SECTION)
+    st.markdown("---")
+    st.subheader("➕ ADD TODAY'S WORK / SALE")
+    
+    item_type = st.selectbox(
+        "Select Item / Service Type",
+        ["Tubeless Puncture", "Tube Puncture", "Inside Puncture", "Neck / Valve Change", "Tyre Setting", "Tyre Sale", "Tube Sale", "Fitting Charge", "Wheel Balancing", "Flap Change"]
+    )
+    
+    selected_size = "N/A"
+    default_rate = 100
+
+    if item_type == "Tyre Sale":
+        tyre_options = [f"{t['BRAND']} {t['SIZE']} ({t.get('VEHICLE', '')}) - Stock: {t['STOCK']} (₹{t['SELLING RATE']})" for t in st.session_state.tyre_stock]
+        if tyre_options:
+            selected_tyre_str = st.selectbox("Select Tyre Size / Stock", tyre_options)
+            for t in st.session_state.tyre_stock:
+                if f"{t['BRAND']} {t['SIZE']}" in selected_tyre_str:
+                    selected_size = f"{t['BRAND']} {t['SIZE']}"
+                    default_rate = int(t['SELLING RATE'])
+        else:
+            st.warning("No Tyre stock available!")
+
+    elif item_type == "Tube Sale":
+        tube_options = [f"{tu['BRAND']} {tu['SIZE']} ({tu.get('VEHICLE', '')}) - Stock: {tu['STOCK']} (₹{tu['SELLING RATE']})" for tu in st.session_state.tube_stock]
+        if tube_options:
+            selected_tube_str = st.selectbox("Select Tube Size / Stock", tube_options)
+            for tu in st.session_state.tube_stock:
+                if f"{tu['BRAND']} {tu['SIZE']}" in selected_tube_str:
+                    selected_size = f"{tu['BRAND']} {tu['SIZE']}"
+                    default_rate = int(tu['SELLING RATE'])
+        else:
+            st.warning("No Tube stock available!")
+
+    with st.form("quick_sale_form"):
+        col_w1, col_w2, col_w3 = st.columns(3)
+        qty = col_w1.number_input("Qty", min_value=1, value=1)
+        amount = col_w2.number_input("Amount (₹)", min_value=0, value=default_rate)
+        mode = col_w3.selectbox("Payment Mode", ["Cash", "UPI", "Credit"])
+        
+        if st.form_submit_button("Save Sale 💾"):
+            st.session_state.sales_data.append({
+                "ITEM": item_type, "SIZE": selected_size, "QTY": qty, "AMOUNT": amount, "MODE": mode, "DATE": str(date.today())
+            })
+            if mode == "Credit":
+                st.session_state.credit_data.append({
+                    "CUSTOMER": "Counter Customer", "PHONE": "N/A", "DETAILS": f"{item_type} ({selected_size})", "AMOUNT": amount, "STATUS": "Pending"
+                })
+            st.success("✅ Sale recorded successfully!")
+            st.rerun()
+
+# 2. TYRE STOCK
 with tabs[1]:
     st.subheader(f"🛞 TYRE STOCK MANAGEMENT ({len(st.session_state.tyre_stock)})")
     
@@ -171,7 +221,7 @@ with tabs[1]:
     st.markdown("---")
     st.markdown("### 📋 Existing Tyre Stock List")
     if not st.session_state.tyre_stock:
-        st.info("No tyre stock added yet. Use the form above to add tyres.")
+        st.info("No tyre stock added yet.")
     else:
         for idx, t in enumerate(st.session_state.tyre_stock):
             v_type = t.get('VEHICLE', 'General')
@@ -274,30 +324,212 @@ with tabs[5]:
         df_m = df_m[df_m['BRAND'].str.contains(search_m, case=False, na=False) | df_m['SIZE'].str.contains(search_m, case=False, na=False)]
     st.dataframe(df_m, use_container_width=True)
 
-# Other tabs placeholders
+# 7. STATUS STUDIO
 with tabs[6]:
     st.subheader("🎬 STATUS STUDIO")
+    st.write("Create branded WhatsApp-status posters & videos.")
 
+# 8. PIGMI COLLECTION
 with tabs[7]:
-    st.subheader("🐷 PIGMI COLLECTION")
+    tot_pigmi = sum(p['BALANCE'] for p in st.session_state.pigmi_data)
+    st.subheader(f"🐷 PIGMI COLLECTION • Total Balance: ₹{tot_pigmi:,.2f}")
+    
+    st.markdown("### ➕ Add New Pigmi Account / Person")
+    with st.form("add_p_form"):
+        c1, c2, c3 = st.columns(3)
+        name = c1.text_input("Name (പേര്)")
+        loc = c2.text_input("Location (സ്ഥലം)")
+        phone = c3.text_input("Phone (ഫോൺ നമ്പർ)")
+        
+        c4, c5, c6 = st.columns(3)
+        bank = c4.text_input("Bank / Society Name (ബാങ്ക് പേര്)")
+        ac = c5.text_input("A/C Number (അക്കൗണ്ട് നമ്പർ)")
+        target = c6.number_input("Daily Target Amount (₹)", min_value=10, value=500)
+        
+        if st.form_submit_button("Save Pigmi Account 💾"):
+            st.session_state.pigmi_data.append({
+                "NAME": name.upper(), "LOCATION": loc, "PHONE": phone, 
+                "BANK": bank.upper(), "AC_NO": ac, "DAILY_TARGET": target, 
+                "COLLECTED": 0, "WITHDRAWN": 0, "BALANCE": 0,
+                "LAST_DATE": str(date.today()),
+                "HISTORY": []
+            })
+            st.success("✅ Pigmi Account Added Successfully!")
+            st.rerun()
 
+    st.markdown("---")
+    st.markdown("### 📋 ACTIVE PIGMI ACCOUNTS")
+    if not st.session_state.pigmi_data:
+        st.info("No Pigmi accounts added yet.")
+    else:
+        for idx, p in enumerate(st.session_state.pigmi_data):
+            col_main, col_del = st.columns([5, 1])
+            with col_main:
+                st.markdown(f"""
+                <div class="card-box">
+                    <h3 style="margin:0; color:#4CAF50;">{p['NAME']}</h3>
+                    <p style="color:#ccc; font-size:13px; margin:2px 0;">{p['LOCATION']} • {p['PHONE']}</p>
+                    <p style="color:#ff9800; font-size:13px; margin-bottom:5px;">🏛️ <b>{p['BANK']}</b> | A/C No: <b>{p['AC_NO']}</b></p>
+                    <p style="font-size:13px; color:#aaa; margin-bottom:10px;">📅 Last Collection Date: <b>{p.get('LAST_DATE', 'N/A')}</b></p>
+                    <p style="font-size:14px; color:#fff;">
+                        Total Collected: <b style="color:#4CAF50;">₹{p['COLLECTED']:,.2f}</b> | Balance: <b style="color:#4CAF50;">₹{p['BALANCE']:,.2f}</b>
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_del:
+                if st.button("🗑️ Delete Account", key=f"del_ac_{idx}"):
+                    st.session_state.pigmi_data.pop(idx)
+                    st.success("Account Deleted!")
+                    st.rerun()
+            
+            if p.get("HISTORY"):
+                with st.expander(f"📜 View/Edit Collection History for {p['NAME']}"):
+                    for h_idx, h in enumerate(p["HISTORY"]):
+                        h_col1, h_col2 = st.columns([4, 1])
+                        with h_col1:
+                            st.markdown(f"- 📅 Date: **{h['DATE']}** | Collected Amount: <b style='color:#4CAF50;'>₹{h['AMOUNT']:,.2f}</b>", unsafe_allow_html=True)
+                        with h_col2:
+                            if st.button("🗑️ Clear Entry", key=f"del_h_{idx}_{h_idx}"):
+                                st.session_state.pigmi_data[idx]['COLLECTED'] -= h['AMOUNT']
+                                st.session_state.pigmi_data[idx]['BALANCE'] -= h['AMOUNT']
+                                st.session_state.pigmi_data[idx]['HISTORY'].pop(h_idx)
+                                st.success("Entry removed!")
+                                st.rerun()
+            
+            with st.form(key=f"collect_form_{idx}"):
+                col_b1, col_b2, col_b3 = st.columns([2, 2, 1])
+                with col_b1:
+                    collect_date = st.date_input("Collection Date 📅", value=date.today(), key=f"date_{idx}")
+                with col_b2:
+                    daily_amt = st.number_input(
+                        "Amount to Add (₹)", 
+                        min_value=1, 
+                        value=int(p.get('DAILY_TARGET', 500)), 
+                        key=f"daily_amt_{idx}"
+                    )
+                with col_b3:
+                    st.write("")
+                    st.write("")
+                    submit_collect = st.form_submit_button("📥 Collect & Save")
+                
+                if submit_collect:
+                    st.session_state.pigmi_data[idx]['COLLECTED'] += daily_amt
+                    st.session_state.pigmi_data[idx]['BALANCE'] += daily_amt
+                    st.session_state.pigmi_data[idx]['LAST_DATE'] = str(collect_date)
+                    
+                    if "HISTORY" not in st.session_state.pigmi_data[idx]:
+                        st.session_state.pigmi_data[idx]["HISTORY"] = []
+                    st.session_state.pigmi_data[idx]["HISTORY"].insert(0, {"DATE": str(collect_date), "AMOUNT": daily_amt})
+                    
+                    st.success(f"✅ Added ₹{daily_amt} on {collect_date}!")
+                    st.rerun()
+
+# 9. BILLING
 with tabs[8]:
-    st.subheader("🧾 BILLING")
+    st.subheader("🧾 BILLING & INVOICING")
+    st.info("Billing feature active.")
 
+# 10. PAYMENTS
 with tabs[9]:
     st.subheader("💳 PAYMENTS")
+    st.info("Payments feature active.")
 
+# 11. CREDIT (കടം)
 with tabs[10]:
-    st.subheader("📒 CREDIT (കടം)")
+    st.subheader("📒 CREDIT (കടം) MANAGEMENT")
+    st.markdown("### ➕ Add New Credit Record")
+    with st.form("add_credit_form"):
+        col_c1, col_c2, col_c3 = st.columns(3)
+        cust_name = col_c1.text_input("Customer Name")
+        cust_phone = col_c2.text_input("Phone Number")
+        credit_amt = col_c3.number_input("Credit Amount (₹)", min_value=1, value=500)
+        credit_details = st.text_input("Details / Items Bought")
+        if st.form_submit_button("Save Credit Record 💾"):
+            st.session_state.credit_data.append({
+                "CUSTOMER": cust_name, "PHONE": cust_phone, "DETAILS": credit_details, "AMOUNT": credit_amt, "STATUS": "Pending"
+            })
+            st.success("Credit added!")
+            st.rerun()
 
+# 12. EXPENSES
 with tabs[11]:
-    st.subheader("💸 EXPENSES")
+    tot_exp = sum(e['AMOUNT'] for e in st.session_state.expenses_data)
+    st.subheader(f"💸 EXPENSES MANAGEMENT • Total Spent: ₹{tot_exp:,.2f}")
+    
+    st.markdown("### ➕ Add New Expense")
+    with st.form("add_exp_form"):
+        c1, c2 = st.columns(2)
+        cat_select = c1.selectbox(
+            "Expense Category", 
+            ["Room Rent (റൂം വാടക)", "Electricity Bill (കറന്റ് ബില്ല്)", "Food / Tea (ഫുഡ് / ചായ)", "Salary (ശമ്പളം)", "Transport / Freight (വണ്ടി വാടക)", "Machine Repair (മെഷീൻ റിപ്പയർ)", "Other (മറ്റുള്ളവ)"]
+        )
+        custom_cat = ""
+        if "Other" in cat_select:
+            custom_cat = c1.text_input("Enter Custom Category Name")
+        
+        recipient = c2.text_input("Paid To / Recipient", placeholder="e.g. Owner name, Hotel, KSEB")
+        
+        c3, c4, c5 = st.columns(3)
+        amt = c3.number_input("Amount (തുക ₹)", min_value=1, step=50, value=100)
+        urgency = c4.radio("Urgency", ["Normal", "Urgent ⚠️"], horizontal=True)
+        exp_date = c5.date_input("Date", value=date.today())
+        
+        if st.form_submit_button("Save Expense 💾"):
+            final_cat = custom_cat if ("Other" in cat_select and custom_cat) else cat_select.split(" (")[0]
+            st.session_state.expenses_data.append({
+                "CATEGORY": final_cat, 
+                "RECIPIENT": recipient if recipient else "N/A", 
+                "AMOUNT": amt, 
+                "URGENCY": urgency,
+                "DATE": str(exp_date)
+            })
+            st.success("✅ Expense Saved!")
+            st.rerun()
 
+# 13. RETREADING
 with tabs[12]:
-    st.subheader("🔄 RETREADING")
+    st.subheader("🔄 RETREADING / REBELTING")
+    st.markdown("### ➕ Add Retreading Record")
+    with st.form("add_retread_form"):
+        col_r1, col_r2, col_r3 = st.columns(3)
+        r_cust = col_r1.text_input("Customer Name")
+        r_size = col_r2.text_input("Tyre Size")
+        r_qty = col_r3.number_input("Quantity", min_value=1, value=1)
+        if st.form_submit_button("Save Retreading Record 💾"):
+            st.session_state.retreading_data.append({
+                "CUSTOMER": r_cust, "TYRE_SIZE": r_size, "QTY": r_qty, "STATUS": "Sent to factory"
+            })
+            st.success("Retreading record added!")
+            st.rerun()
 
+# 14. GUARANTEE / CLAIMS
 with tabs[13]:
-    st.subheader("🛡️ GUARANTEE / CLAIMS")
+    st.subheader("🛡️ GUARANTEE & WARRANTY CLAIMS")
+    st.markdown("### ➕ Add Claim Record")
+    with st.form("add_claim_form"):
+        col_g1, col_g2 = st.columns(2)
+        g_cust = col_g1.text_input("Customer Name")
+        g_item = col_g2.text_input("Item Name / Size")
+        g_issue = st.text_input("Issue / Defect Description")
+        if st.form_submit_button("Save Claim Record 💾"):
+            st.session_state.guarantee_claims.append({
+                "CUSTOMER": g_cust, "ITEM": g_item, "ISSUE": g_issue, "STATUS": "Pending"
+            })
+            st.success("Claim added!")
+            st.rerun()
 
+# 15. DEALERS DIRECTORY
 with tabs[14]:
     st.subheader("📖 DEALERS DIRECTORY")
+    st.markdown("### ➕ Add Dealer Info")
+    with st.form("add_dealer_form"):
+        col_d1, col_d2, col_d3 = st.columns(3)
+        d_name = col_d1.text_input("Dealer Name")
+        d_loc = col_d2.text_input("Location")
+        d_phone = col_d3.text_input("Phone Number")
+        if st.form_submit_button("Save Dealer 💾"):
+            st.session_state.dealers_directory.append({
+                "DEALER": d_name, "LOCATION": d_loc, "PHONE": d_phone
+            })
+            st.success("Dealer added!")
+            st.rerun()

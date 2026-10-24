@@ -11,11 +11,11 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# SESSION STATE DATA INITIALIZATION (FIXED KEYS)
+# SESSION STATE DATA INITIALIZATION
 # ---------------------------------------------------------
 if "tyre_stock" not in st.session_state:
     st.session_state.tyre_stock = [
-        {"BRAND": "APOLLO", "VEHICLE": "Scooter", "SIZE": "90/100/10", "CONDITION": "New", "PATTERN": "53J GRIP", "STOCK": 1, "PURCHASE RATE": 1020, "SELLING RATE": 1450}
+        {"BRAND": "CEAT", "VEHICLE": "Car", "SIZE": "145/70/12", "CONDITION": "New", "PATTERN": "GRIP", "STOCK": 4, "PURCHASE RATE": 2150, "SELLING RATE": 2850}
     ]
 
 if "tube_stock" not in st.session_state:
@@ -34,9 +34,9 @@ if "pigmi_data" not in st.session_state:
         {"NAME": "SHAHAJAHAN E", "LOCATION": "ONTIYANGADI", "PHONE": "9900316275", "BANK": "Janaasha South Nidhi Ltd", "AC_NO": "035601167", "DAILY_TARGET": 500, "OLD_BAL": 1000, "COLLECTED": 6000, "WITHDRAWN": 0, "BALANCE": 7000, "LAST_DATE": str(date.today())}
     ]
 
-if "billing_data" not in st.session_state:
-    st.session_state.billing_data = [
-        {"BILL_NO": "CTS-1176", "TYPE": "Counter Sale", "SERVICE": "Tubeless Puncture", "AMOUNT": 100, "MODE": "Cash"}
+if "sales_data" not in st.session_state:
+    st.session_state.sales_data = [
+        {"ITEM": "Tubeless Puncture", "QTY": 1, "AMOUNT": 100, "MODE": "Cash", "DATE": str(date.today())}
     ]
 
 if "expenses_data" not in st.session_state:
@@ -70,7 +70,7 @@ if "retreading_data" not in st.session_state:
     ]
 
 # ---------------------------------------------------------
-# CUSTOM CSS STYLING
+# CUSTOM CSS STYLING (FIXED CARD TEXT VISIBILITY)
 # ---------------------------------------------------------
 st.markdown("""
 <style>
@@ -92,10 +92,11 @@ st.markdown("""
         color: #888;
     }
     .card-box {
-        background-color: #161920;
+        background-color: #1e222b;
+        color: #ffffff !important;
         padding: 15px;
         border-radius: 8px;
-        border: 1px solid #262730;
+        border: 1px solid #3a3f4b;
         margin-bottom: 15px;
     }
 </style>
@@ -133,19 +134,52 @@ tabs = st.tabs([
 # 1. OVERVIEW
 with tabs[0]:
     st.subheader("OVERVIEW • TODAY's SUMMARY")
+    
+    today_str = str(date.today())
+    today_sales_list = [s for s in st.session_state.sales_data if s['DATE'] == today_str]
+    
+    tot_sales = sum(s['AMOUNT'] for s in today_sales_list)
+    cash_today = sum(s['AMOUNT'] for s in today_sales_list if s['MODE'] == 'Cash')
+    upi_today = sum(s['AMOUNT'] for s in today_sales_list if s['MODE'] == 'UPI')
+    credit_given_today = sum(c['AMOUNT'] for c in st.session_state.credit_data)
+    
+    tot_pigmi_col = sum(p['COLLECTED'] for p in st.session_state.pigmi_data)
+    tot_pigmi_wit = sum(p['WITHDRAWN'] for p in st.session_state.pigmi_data)
+    tot_expenses = sum(e['AMOUNT'] for e in st.session_state.expenses_data)
+
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("TODAY'S SALES", f"₹ {sum(b['AMOUNT'] for b in st.session_state.billing_data)}")
-    c2.metric("CASH", "₹ 0")
-    c3.metric("PAYTM / UPI", "₹ 0")
-    c4.metric("CREDIT GIVEN", f"₹ {sum(c['AMOUNT'] for c in st.session_state.credit_data)}")
+    c1.metric("TODAY'S SALES", f"₹ {tot_sales:,.2f}")
+    c2.metric("CASH", f"₹ {cash_today:,.2f}")
+    c3.metric("PAYTM / UPI", f"₹ {upi_today:,.2f}")
+    c4.metric("CREDIT GIVEN", f"₹ {credit_given_today:,.2f}")
 
     c5, c6, c7, c8 = st.columns(4)
-    c5.metric("PIGMI COLLECTED", f"₹ {sum(p['COLLECTED'] for p in st.session_state.pigmi_data):,.2f}")
-    c6.metric("PIGMI WITHDRAWN", f"₹ {sum(p['WITHDRAWN'] for p in st.session_state.pigmi_data):,.2f}")
-    c7.metric("PAID TO AGENTS", "₹ 0")
-    c8.metric("TOTAL EXPENSES", f"₹ {sum(e['AMOUNT'] for e in st.session_state.expenses_data):,.2f}")
+    c5.metric("PIGMI COLLECTED", f"₹ {tot_pigmi_col:,.2f}")
+    c6.metric("PIGMI WITHDRAWN", f"₹ {tot_pigmi_wit:,.2f}")
+    c7.metric("PAID TO AGENTS", "₹ 0.00")
+    c8.metric("TOTAL EXPENSES", f"₹ {tot_expenses:,.2f}")
 
-# 2. TYRE STOCK (WITH SAFE KEY GETTER)
+    st.markdown("---")
+    st.subheader("➕ ADD TODAY'S WORK / SALE")
+    with st.form("quick_sale_form"):
+        col_w1, col_w2, col_w3, col_w4 = st.columns(4)
+        item_name = col_w1.selectbox("Item / Service", ["Tubeless Puncture", "Tube Puncture", "Inside Puncture", "Tyre Sale", "Tube Sale"])
+        qty = col_w2.number_input("Qty", min_value=1, value=1)
+        amount = col_w3.number_input("Amount (₹)", min_value=0, value=100)
+        mode = col_w4.selectbox("Payment Mode", ["Cash", "UPI", "Credit"])
+        
+        if st.form_submit_button("Save Sale 💾"):
+            st.session_state.sales_data.append({
+                "ITEM": item_name, "QTY": qty, "AMOUNT": amount, "MODE": mode, "DATE": str(date.today())
+            })
+            if mode == "Credit":
+                st.session_state.credit_data.append({
+                    "CUSTOMER": "Counter Customer", "PHONE": "N/A", "DETAILS": item_name, "AMOUNT": amount, "STATUS": "Pending"
+                })
+            st.success("✅ Sale recorded and updated in Overview summary!")
+            st.rerun()
+
+# 2. TYRE STOCK
 with tabs[1]:
     st.subheader(f"TYRE STOCK ({len(st.session_state.tyre_stock)})")
     with st.expander("➕ Add New Tyre Stock"):
@@ -177,7 +211,7 @@ with tabs[1]:
         with col1:
             st.markdown(f"""
             <div class="card-box" style="padding:10px; margin-bottom:5px;">
-                <b>{t['BRAND']}</b> ({v_type}) - {t['SIZE']} | Cond: {t.get('CONDITION', 'New')} | Stock: <b style="color:#4CAF50;">{t['STOCK']}</b> | Sell: ₹{t['SELLING RATE']}
+                <b style="color:#ffffff;">{t['BRAND']}</b> <span style="color:#cccccc;">({v_type})</span> - <span style="color:#ffffff;">{t['SIZE']}</span> | Cond: <span style="color:#cccccc;">{t.get('CONDITION', 'New')}</span> | Stock: <b style="color:#4CAF50;">{t['STOCK']}</b> | Sell: <b style="color:#ff9800;">₹{t['SELLING RATE']}</b>
             </div>
             """, unsafe_allow_html=True)
         with col2:
@@ -215,7 +249,7 @@ with tabs[2]:
         with col1:
             st.markdown(f"""
             <div class="card-box" style="padding:10px; margin-bottom:5px;">
-                <b>{tu['BRAND']}</b> ({tu_veh}) - {tu['SIZE']} | Stock: <b style="color:#4CAF50;">{tu['STOCK']}</b> | Sell: ₹{tu['SELLING RATE']}
+                <b style="color:#ffffff;">{tu['BRAND']}</b> <span style="color:#cccccc;">({tu_veh})</span> - <span style="color:#ffffff;">{tu['SIZE']}</span> | Stock: <b style="color:#4CAF50;">{tu['STOCK']}</b> | Sell: <b style="color:#ff9800;">₹{tu['SELLING RATE']}</b>
             </div>
             """, unsafe_allow_html=True)
         with col2:
@@ -238,7 +272,7 @@ with tabs[3]:
     for idx, pi in enumerate(st.session_state.puncture_items):
         col1, col2 = st.columns([5, 1])
         with col1:
-            st.markdown(f"""<div class="card-box" style="padding:10px; margin-bottom:5px;"><b>{pi['SERVICE']}</b> — Rate: <b style="color:#4CAF50;">₹{pi['RATE']}</b></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="card-box" style="padding:10px; margin-bottom:5px;"><b style="color:#ffffff;">{pi['SERVICE']}</b> — Rate: <b style="color:#4CAF50;">₹{pi['RATE']}</b></div>""", unsafe_allow_html=True)
         with col2:
             if st.button("🗑️ Delete", key=f"del_pi_{idx}"):
                 st.session_state.puncture_items.pop(idx)
@@ -252,7 +286,7 @@ with tabs[4]:
     if out_of_stock:
         for item in out_of_stock:
             v_t = item.get('VEHICLE', '')
-            st.markdown(f"""<div class="card-box" style="border-left: 4px solid #f44336;"><b>{item['BRAND']} ({v_t}) {item['SIZE']}</b> — Stock Qty: <span style="color:#f44336;">{item['STOCK']}</span></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="card-box" style="border-left: 4px solid #f44336;"><b style="color:#ffffff;">{item['BRAND']} ({v_t}) {item['SIZE']}</b> — Stock Qty: <span style="color:#f44336; font-weight:bold;">{item['STOCK']}</span></div>""", unsafe_allow_html=True)
     else:
         st.success("All items have sufficient stock!")
 
@@ -302,10 +336,10 @@ with tabs[7]:
         st.markdown(f"""
         <div class="card-box">
             <h3 style="margin:0; color:#4CAF50;">{p['NAME']}</h3>
-            <p style="color:#aaa; font-size:13px; margin:2px 0;">{p['LOCATION']} • {p['PHONE']}</p>
+            <p style="color:#ccc; font-size:13px; margin:2px 0;">{p['LOCATION']} • {p['PHONE']}</p>
             <p style="color:#ff9800; font-size:13px; margin-bottom:5px;">🏛️ <b>{p['BANK']}</b> | A/C No: <b>{p['AC_NO']}</b></p>
-            <p style="font-size:13px; color:#888; margin-bottom:10px;">📅 Last Collection Date: <b>{p.get('LAST_DATE', 'N/A')}</b></p>
-            <p style="font-size:14px;">
+            <p style="font-size:13px; color:#aaa; margin-bottom:10px;">📅 Last Collection Date: <b>{p.get('LAST_DATE', 'N/A')}</b></p>
+            <p style="font-size:14px; color:#fff;">
                 Total Collected: <b style="color:#4CAF50;">₹{p['COLLECTED']:,.2f}</b> | Balance: <b style="color:#4CAF50;">₹{p['BALANCE']:,.2f}</b>
             </p>
         </div>
@@ -387,9 +421,9 @@ with tabs[11]:
             st.markdown(f"""
             <div class="card-box" style="padding:12px; margin-bottom:8px;">
                 <span style="font-size:12px; color:#ff9800; border:1px solid #ff9800; padding:2px 6px; border-radius:4px;">{e['CATEGORY']}</span>
-                <span style="font-size:12px; float:right;">{urg_badge} | 📅 {e.get('DATE', '')}</span>
-                <h3 style="margin:5px 0 2px 0; color:#f44336;">₹ {e['AMOUNT']:,.2f}</h3>
-                <span style="font-size:13px; color:#aaa;">Paid To: <b>{e.get('RECIPIENT', 'N/A')}</b></span>
+                <span style="font-size:12px; float:right; color:#ccc;">{urg_badge} | 📅 {e.get('DATE', '')}</span>
+                <h3 style="margin:5px 0 2px 0; color:#ff5252;">₹ {e['AMOUNT']:,.2f}</h3>
+                <span style="font-size:13px; color:#bbb;">Paid To: <b style="color:#fff;">{e.get('RECIPIENT', 'N/A')}</b></span>
             </div>
             """, unsafe_allow_html=True)
         with col2:

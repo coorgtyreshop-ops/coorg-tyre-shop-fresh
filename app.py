@@ -11,19 +11,13 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# SESSION STATE DATA INITIALIZATION
+# SESSION STATE DATA INITIALIZATION (ALL INITIALIZED TO ZERO/EMPTY)
 # ---------------------------------------------------------
 if "tyre_stock" not in st.session_state:
-    st.session_state.tyre_stock = [
-        {"BRAND": "CEAT", "VEHICLE": "Car", "SIZE": "145/70/12", "CONDITION": "New", "PATTERN": "GRIP", "STOCK": 4, "PURCHASE RATE": 2150, "SELLING RATE": 2850},
-        {"BRAND": "APOLLO", "VEHICLE": "Scooter", "SIZE": "90/100/10", "CONDITION": "New", "PATTERN": "53J GRIP", "STOCK": 2, "PURCHASE RATE": 1020, "SELLING RATE": 1450}
-    ]
+    st.session_state.tyre_stock = []
 
 if "tube_stock" not in st.session_state:
-    st.session_state.tube_stock = [
-        {"BRAND": "BRAZA", "VEHICLE": "Scooter", "SIZE": "3.00-10", "CONDITION": "New", "STOCK": 5, "PURCHASE RATE": 180, "SELLING RATE": 250},
-        {"BRAND": "MRF", "VEHICLE": "Bike", "SIZE": "3.00-18", "CONDITION": "New", "STOCK": 3, "PURCHASE RATE": 210, "SELLING RATE": 290}
-    ]
+    st.session_state.tube_stock = []
 
 if "puncture_items" not in st.session_state:
     st.session_state.puncture_items = [
@@ -32,44 +26,28 @@ if "puncture_items" not in st.session_state:
     ]
 
 if "pigmi_data" not in st.session_state:
-    st.session_state.pigmi_data = [
-        {"NAME": "SHAHAJAHAN E", "LOCATION": "ONTIYANGADI", "PHONE": "9900316275", "BANK": "Janaasha South Nidhi Ltd", "AC_NO": "035601167", "DAILY_TARGET": 500, "OLD_BAL": 1000, "COLLECTED": 6000, "WITHDRAWN": 0, "BALANCE": 7000, "LAST_DATE": str(date.today())}
-    ]
+    st.session_state.pigmi_data = []
 
 if "sales_data" not in st.session_state:
-    st.session_state.sales_data = [
-        {"ITEM": "Tubeless Puncture", "SIZE": "N/A", "QTY": 1, "AMOUNT": 100, "MODE": "Cash", "DATE": str(date.today())}
-    ]
+    st.session_state.sales_data = []
 
 if "expenses_data" not in st.session_state:
-    st.session_state.expenses_data = [
-        {"CATEGORY": "Room Rent", "RECIPIENT": "Building Owner", "AMOUNT": 15000, "URGENCY": "Normal", "DATE": "2026-10-01"}
-    ]
+    st.session_state.expenses_data = []
 
 if "credit_data" not in st.session_state:
-    st.session_state.credit_data = [
-        {"CUSTOMER": "Ramesh", "PHONE": "9876543210", "DETAILS": "Tyre Balance", "AMOUNT": 1500, "STATUS": "Pending"}
-    ]
+    st.session_state.credit_data = []
 
 if "market_rates" not in st.session_state:
-    st.session_state.market_rates = [
-        {"BRAND": "APOLLO", "SIZE": "90/100/10", "ONLINE_PRICE": 1450, "LAST_UPDATED": "22/10/2026"}
-    ]
+    st.session_state.market_rates = []
 
 if "guarantee_claims" not in st.session_state:
-    st.session_state.guarantee_claims = [
-        {"CUSTOMER": "Savad", "ITEM": "Apollo 100/90-10", "ISSUE": "Side bubble", "STATUS": "Pending"}
-    ]
+    st.session_state.guarantee_claims = []
 
 if "dealers_directory" not in st.session_state:
-    st.session_state.dealers_directory = [
-        {"DEALER": "JK Tyre Agency", "LOCATION": "Madikeri", "PHONE": "9440012345"}
-    ]
+    st.session_state.dealers_directory = []
 
 if "retreading_data" not in st.session_state:
-    st.session_state.retreading_data = [
-        {"CUSTOMER": "Kuttappan", "TYRE_SIZE": "1000R20", "QTY": 2, "STATUS": "Sent to factory"}
-    ]
+    st.session_state.retreading_data = []
 
 # ---------------------------------------------------------
 # CUSTOM CSS STYLING
@@ -138,7 +116,7 @@ with tabs[0]:
     st.subheader("OVERVIEW • TODAY's SUMMARY")
     
     today_str = str(date.today())
-    today_sales_list = [s for s in st.session_state.sales_data if s['DATE'] == today_str]
+    today_sales_list = [s for s in st.session_state.sales_data if s.get('DATE') == today_str]
     
     tot_sales = sum(s['AMOUNT'] for s in today_sales_list)
     cash_today = sum(s['AMOUNT'] for s in today_sales_list if s['MODE'] == 'Cash')

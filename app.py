@@ -93,6 +93,13 @@ st.markdown("""
         border: 1px solid #3a3f4b;
         margin-bottom: 15px;
     }
+    .bill-box {
+        background-color: #ffffff;
+        color: #000000;
+        padding: 20px;
+        border-radius: 5px;
+        font-family: monospace;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -116,7 +123,7 @@ tabs = st.tabs([
     "📈 Market Rates",
     "🎬 Status Studio", 
     "🐷 Pigmi Collection", 
-    "🧾 Billing", 
+    "🧾 Billing & Print", 
     "💳 Payments", 
     "📒 Credit (കടം)",
     "💸 Expenses",
@@ -447,10 +454,80 @@ with tabs[7]:
                     st.success(f"✅ Added ₹{daily_amt} on {collect_date}!")
                     st.rerun()
 
-# 9. BILLING
+# 9. BILLING & PRINT & REPORTS
 with tabs[8]:
-    st.subheader("🧾 BILLING & INVOICING")
-    st.info("Billing feature active.")
+    st.subheader("🧾 BILLING, CUSTOMER INVOICE & REPORTS")
+    
+    bill_tab1, bill_tab2 = st.tabs(["🖨️ Generate Customer Bill", "📊 Business Reports (Day / Month / Year)"])
+    
+    with bill_tab1:
+        st.markdown("### 🛞 Create Bill for Customer (Canon Printer Friendly)")
+        with st.form("customer_bill_form"):
+            b_cust = st.text_input("Customer Name (കസ്റ്റമറുടെ പേര്)")
+            b_phone = st.text_input("Phone Number (ഫോൺ നമ്പർ)")
+            b_item = st.text_input("Item / Tyre / Service Details (ഉദാ: Apollo Tyre 90/100/10 & Fitting)")
+            b_slno = st.text_input("Tyre Serial Number / SL No (ഉണ്ടെങ്കിൽ)")
+            
+            col_b1, col_b2 = st.columns(2)
+            b_qty = col_b1.number_input("Quantity", min_value=1, value=1)
+            b_amt = col_b2.number_input("Total Amount (₹)", min_value=0, value=1500)
+            
+            if st.form_submit_button("Generate Bill 🧾"):
+                st.session_state.last_bill = {
+                    "CUSTOMER": b_cust,
+                    "PHONE": b_phone,
+                    "ITEM": b_item,
+                    "SLNO": b_slno,
+                    "QTY": b_qty,
+                    "AMOUNT": b_amt,
+                    "DATE": str(date.today())
+                }
+                st.success("✅ Bill Generated Successfully! Scroll down to preview and print.")
+        
+        if "last_bill" in st.session_state:
+            lb = st.session_state.last_bill
+            st.markdown("---")
+            st.markdown("### 📄 INVOICE PREVIEW")
+            
+            bill_html = f"""
+            <div style="background-color: white; color: black; padding: 25px; border-radius: 10px; width: 400px; margin: auto; border: 2px dashed #333;">
+                <h2 style="text-align: center; margin: 0;">COORG TYRE SHOP</h2>
+                <p style="text-align: center; font-size: 11px; margin: 2px 0;">Abyayath Mangala, Ontiyangadi, Siddapura - 571253</p>
+                <p style="text-align: center; font-size: 11px; margin: 2px 0;">Ph: 9035xxxxxx</p>
+                <hr style="border: 1px solid #000;">
+                <p><b>Date:</b> {lb['DATE']}</p>
+                <p><b>Customer:</b> {lb['CUSTOMER']} ({lb['PHONE']})</p>
+                <hr style="border: 0.5px solid #ccc;">
+                <p><b>Item:</b> {lb['ITEM']}</p>
+                <p><b>SL No:</b> {lb['SLNO'] if lb['SLNO'] else 'N/A'}</p>
+                <p><b>Qty:</b> {lb['QTY']} | <b>Amount:</b> ₹{lb['AMOUNT']:,.2f}</p>
+                <hr style="border: 1px solid #000;">
+                <h3 style="text-align: right;">Total: ₹{lb['AMOUNT']:,.2f}</h3>
+                <p style="text-align: center; font-size: 12px; margin-top: 15px;">Thank You! Visit Again. 🛞</p>
+            </div>
+            """
+            st.markdown(bill_html, unsafe_allow_html=True)
+            st.info("💡 ടാബ്ലെറ്റ് അല്ലെങ്കിൽ കമ്പ്യൂട്ടറിൽ നിന്ന് പ്രിന്റ് ചെയ്യാൻ നിങ്ങളുടെ ബ്രൗസറിലെ Print (Ctrl + P) ഉപയോഗിക്കുക.")
+
+    with bill_tab2:
+        st.markdown("### 📊 Business Summary & Reports")
+        
+        tot_tyre_count = sum(t['STOCK'] for t in st.session_state.tyre_stock)
+        tot_tube_count = sum(tu['STOCK'] for tu in st.session_state.tube_stock)
+        total_sales_count = len(st.session_state.sales_data)
+        
+        rc1, rc2, rc3 = st.columns(3)
+        rc1.metric("Total Sales Records", total_sales_count)
+        rc2.metric("Total Tyre Stock Qty", tot_tyre_count)
+        rc3.metric("Total Tube Stock Qty", tot_tube_count)
+        
+        st.markdown("---")
+        st.markdown("#### 📋 Detailed Sales History")
+        if not st.session_state.sales_data:
+            st.info("No sales recorded yet.")
+        else:
+            df_sales = pd.DataFrame(st.session_state.sales_data)
+            st.dataframe(df_sales, use_container_width=True)
 
 # 10. PAYMENTS
 with tabs[9]:
@@ -616,5 +693,5 @@ with tabs[14]:
                 "DEALER": d_name, "LOCATION": d_loc, "PHONE": d_phone
             })
             save_data()
-            st.success("Dealer added!")
+            st.success("Dealer data saved!")
             st.rerun()

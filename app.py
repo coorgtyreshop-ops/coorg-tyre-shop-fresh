@@ -14,6 +14,48 @@ st.set_page_config(
 DATA_FILE = "coorg_tyre_data.pkl"
 
 # ---------------------------------------------------------
+# LOGIN AUTHENTICATION LOGIC
+# ---------------------------------------------------------
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.markdown("""
+    <style>
+        .login-box {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 30px;
+            background-color: #1e222b;
+            border-radius: 10px;
+            border: 1px solid #3a3f4b;
+            color: white;
+            text-align: center;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<h1 style='text-align: center;'>🛞 COORG TYRE SHOP</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #888;'>Please login to continue</p>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 1.5, 1])
+    with col2:
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submit_login = st.form_submit_button("Login 🔐")
+            
+            if submit_login:
+                # ഇവിടെ നിങ്ങൾക്ക് ഇഷ്ടമുള്ള യൂസർനേമും പാസ്‌വേഡും നൽകാം
+                if username == "admin" and password == "1234":
+                    st.session_state.authenticated = True
+                    st.success("Login Successful!")
+                    st.rerun()
+                else:
+                    st.error("❌ Invalid Username or Password!")
+    st.stop()  # Stop execution here until logged in
+
+# ---------------------------------------------------------
 # PERSISTENT LOCAL STORAGE LOGIC
 # ---------------------------------------------------------
 def load_data():
@@ -93,23 +135,23 @@ st.markdown("""
         border: 1px solid #3a3f4b;
         margin-bottom: 15px;
     }
-    .bill-box {
-        background-color: #ffffff;
-        color: #000000;
-        padding: 20px;
-        border-radius: 5px;
-        font-family: monospace;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# Top Banner
-st.markdown("""
-<div class="main-header">
-    <div class="shop-title">🛞 COORG TYRE SHOP</div>
-    <div class="shop-sub">Abyayath Mangala, Ontiyangadi, Main Road, Siddapura - 571253</div>
-</div>
-""", unsafe_allow_html=True)
+# Top Banner with Logout Button
+col_b1, col_b2 = st.columns([6, 1])
+with col_b1:
+    st.markdown("""
+    <div class="main-header">
+        <div class="shop-title">🛞 COORG TYRE SHOP</div>
+        <div class="shop-sub">Abyayath Mangala, Ontiyangadi, Main Road, Siddapura - 571253</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col_b2:
+    st.write("")
+    if st.button("🔒 Logout"):
+        st.session_state.authenticated = False
+        st.rerun()
 
 # ---------------------------------------------------------
 # NAVIGATION TABS
@@ -492,7 +534,7 @@ with tabs[8]:
             bill_html = f"""
             <div style="background-color: white; color: black; padding: 25px; border-radius: 10px; width: 400px; margin: auto; border: 2px dashed #333;">
                 <h2 style="text-align: center; margin: 0;">COORG TYRE SHOP</h2>
-                <p style="text-align: center; font-size: 11px; margin: 2px 0;">Abyayath Mangala, Ontiyangadi, Siddapura - 571253</p>
+                <p style="text-align: center; font-size: 11px; margin: 2px 0;">Abyayath Mangala, Ontiyangadi, Main Road, Siddapura - 571253</p>
                 <p style="text-align: center; font-size: 11px; margin: 2px 0;">Ph: 9035xxxxxx</p>
                 <hr style="border: 1px solid #000;">
                 <p><b>Date:</b> {lb['DATE']}</p>

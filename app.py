@@ -46,14 +46,13 @@ if not st.session_state.authenticated:
             submit_login = st.form_submit_button("Login 🔐")
             
             if submit_login:
-                # ഇവിടെ നിങ്ങൾക്ക് ഇഷ്ടമുള്ള യൂസർനേമും പാസ്‌വേഡും നൽകാം
                 if username == "admin" and password == "1234":
                     st.session_state.authenticated = True
                     st.success("Login Successful!")
                     st.rerun()
                 else:
                     st.error("❌ Invalid Username or Password!")
-    st.stop()  # Stop execution here until logged in
+    st.stop()
 
 # ---------------------------------------------------------
 # PERSISTENT LOCAL STORAGE LOGIC
@@ -504,24 +503,52 @@ with tabs[8]:
     
     with bill_tab1:
         st.markdown("### 🛞 Create Bill for Customer (Canon Printer Friendly)")
+        
+        # Build item choices from saved stock & services
+        stock_choices = []
+        for t in st.session_state.tyre_stock:
+            stock_choices.append(f"Tyre: {t['BRAND']} {t['SIZE']} ({t.get('VEHICLE','')}) - ₹{t['SELLING RATE']}")
+        for tu in st.session_state.tube_stock:
+            stock_choices.append(f"Tube: {tu['BRAND']} {tu['SIZE']} - ₹{tu['SELLING RATE']}")
+        for pi in st.session_state.puncture_items:
+            stock_choices.append(f"Service: {pi['SERVICE']} - ₹{pi['RATE']}")
+        
+        if not stock_choices:
+            stock_choices = ["General Service - ₹100"]
+
         with st.form("customer_bill_form"):
-            b_cust = st.text_input("Customer Name (കസ്റ്റമറുടെ പേര്)")
-            b_phone = st.text_input("Phone Number (ഫോൺ നമ്പർ)")
-            b_item = st.text_input("Item / Tyre / Service Details (ഉദാ: Apollo Tyre 90/100/10 & Fitting)")
+            col_inf1, col_inf2, col_inf3 = st.columns(3)
+            b_cust = col_inf1.text_input("Customer Name (പേര്)")
+            b_phone = col_inf2.text_input("Phone Number (ഫോൺ നമ്പർ)")
+            b_veh = col_inf3.text_input("Vehicle Number (വെഹിക്കിൾ നമ്പർ)")
+            
+            selected_item_str = st.selectbox("Select Item / Tyre / Service from Stock", stock_choices)
             b_slno = st.text_input("Tyre Serial Number / SL No (ഉണ്ടെങ്കിൽ)")
             
             col_b1, col_b2 = st.columns(2)
-            b_qty = col_b1.number_input("Quantity", min_value=1, value=1)
-            b_amt = col_b2.number_input("Total Amount (₹)", min_value=0, value=1500)
+            b_qty = col_b1.number_input("Quantity (എണ്ണം)", min_value=1, value=1)
+            
+            # Extract default price from string if possible
+            default_price = 1000
+            try:
+                price_part = selected_item_str.split("₹")[-1]
+                default_price = int(float(price_part))
+            except:
+                pass
+                
+            b_rate = col_b2.number_input("Rate per Unit (ഒരു എണ്ണത്തിന് ₹)", min_value=0, value=default_price)
             
             if st.form_submit_button("Generate Bill 🧾"):
+                total_calc_amt = b_qty * b_rate
                 st.session_state.last_bill = {
                     "CUSTOMER": b_cust,
                     "PHONE": b_phone,
-                    "ITEM": b_item,
+                    "VEHICLE": b_veh,
+                    "ITEM": selected_item_str,
                     "SLNO": b_slno,
                     "QTY": b_qty,
-                    "AMOUNT": b_amt,
+                    "RATE": b_rate,
+                    "AMOUNT": total_calc_amt,
                     "DATE": str(date.today())
                 }
                 st.success("✅ Bill Generated Successfully! Scroll down to preview and print.")
@@ -532,24 +559,25 @@ with tabs[8]:
             st.markdown("### 📄 INVOICE PREVIEW")
             
             bill_html = f"""
-            <div style="background-color: white; color: black; padding: 25px; border-radius: 10px; width: 400px; margin: auto; border: 2px dashed #333;">
+            <div style="background-color: white; color: black; padding: 25px; border-radius: 10px; width: 450px; margin: auto; border: 2px dashed #333; font-family: monospace;">
                 <h2 style="text-align: center; margin: 0;">COORG TYRE SHOP</h2>
                 <p style="text-align: center; font-size: 11px; margin: 2px 0;">Abyayath Mangala, Ontiyangadi, Main Road, Siddapura - 571253</p>
                 <p style="text-align: center; font-size: 11px; margin: 2px 0;">Ph: 9035xxxxxx</p>
                 <hr style="border: 1px solid #000;">
                 <p><b>Date:</b> {lb['DATE']}</p>
-                <p><b>Customer:</b> {lb['CUSTOMER']} ({lb['PHONE']})</p>
+                <p><b>Customer:</b> {lb['CUSTOMER'] if lb['CUSTOMER'] else 'N/A'} | <b>Ph:</b> {lb['PHONE'] if lb['PHONE'] else 'N/A'}</p>
+                <p><b>Vehicle No:</b> {lb['VEHICLE'] if lb['VEHICLE'] else 'N/A'}</p>
                 <hr style="border: 0.5px solid #ccc;">
                 <p><b>Item:</b> {lb['ITEM']}</p>
                 <p><b>SL No:</b> {lb['SLNO'] if lb['SLNO'] else 'N/A'}</p>
-                <p><b>Qty:</b> {lb['QTY']} | <b>Amount:</b> ₹{lb['AMOUNT']:,.2f}</p>
+                <p><b>Qty:</b> {lb['QTY']} x ₹{lb['RATE']:,.2f}</p>
                 <hr style="border: 1px solid #000;">
-                <h3 style="text-align: right;">Total: ₹{lb['AMOUNT']:,.2f}</h3>
+                <h3 style="text-align: right;">Total Amount: ₹{lb['AMOUNT']:,.2f}</h3>
                 <p style="text-align: center; font-size: 12px; margin-top: 15px;">Thank You! Visit Again. 🛞</p>
             </div>
             """
             st.markdown(bill_html, unsafe_allow_html=True)
-            st.info("💡 ടാബ്ലെറ്റ് അല്ലെങ്കിൽ കമ്പ്യൂട്ടറിൽ നിന്ന് പ്രിന്റ് ചെയ്യാൻ നിങ്ങളുടെ ബ്രൗസറിലെ Print (Ctrl + P) ഉപയോഗിക്കുക.")
+            st.info("💡 ടാബ്ലെറ്റ് അല്ലെങ്കിൽ കമ്പ്യൂട്ടറിൽ നിന്ന് Canon പ്രിന്ററിലേക്ക് പ്രിന്റ് ചെയ്യാൻ നിങ്ങളുടെ ബ്രൗസറിലെ Print (Ctrl + P) ഉപയോഗിക്കുക.")
 
     with bill_tab2:
         st.markdown("### 📊 Business Summary & Reports")

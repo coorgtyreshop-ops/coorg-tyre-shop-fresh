@@ -55,7 +55,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ---------------------------------------------------------
-# PERSISTENT LOCAL STORAGE LOGIC
+# PERSISTENT LOCAL STORAGE LOGIC (DATA PROTECTION)
 # ---------------------------------------------------------
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -528,7 +528,6 @@ with tabs[8]:
             col_b1, col_b2 = st.columns(2)
             b_qty = col_b1.number_input("Quantity (എണ്ണം)", min_value=1, value=1)
             
-            # Extract default price from string if possible
             default_price = 1000
             try:
                 price_part = selected_item_str.split("₹")[-1]
@@ -551,7 +550,12 @@ with tabs[8]:
                     "AMOUNT": total_calc_amt,
                     "DATE": str(date.today())
                 }
-                st.success("✅ Bill Generated Successfully! Scroll down to preview and print.")
+                # Also auto-append to sales history so reports track it!
+                st.session_state.sales_data.append({
+                    "ITEM": selected_item_str, "SIZE": b_slno, "QTY": b_qty, "AMOUNT": total_calc_amt, "MODE": "Cash", "DATE": str(date.today())
+                })
+                save_data()
+                st.success("✅ Bill Generated & Saved to Reports Successfully!")
         
         if "last_bill" in st.session_state:
             lb = st.session_state.last_bill
